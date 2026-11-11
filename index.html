@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CareLink – ER STATS REPORT | مستشفى بريدة المركزي</title>
+  <meta name="description" content="CareLink – ER STATS REPORT: تحديث الحالة التشغيلية لقسم الطوارئ في مستشفى بريدة المركزي وتحويلها إلى تقرير صورة عالي الجودة.">
+  <meta name="theme-color" content="#0A2A5E">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ER Stats">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <noscript><p style="padding:20px;font:18px sans-serif">يجب تفعيل JavaScript لتشغيل هذا الموقع. · Please enable JavaScript.</p></noscript>
+
+  <header class="top">
+    <div class="wrap">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5.2 5.2 0 0 0-7.4 0L12 7l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 21.6l8.8-8.6a5.2 5.2 0 0 0 0-7.4z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FF4B5C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:scale(.8) translateY(1px)"><path d="M2 12h5l2-6 4 12 2-6h7"/></svg>
+        </span>
+        <h1>CareLink · كيرلينك<small>ER STATS REPORT · تقرير إحصائيات الطوارئ</small></h1>
+      </div>
+      <div class="org">
+        <div style="text-align:right;direction:rtl">
+          <b>تجمع القصيم الصحي · مستشفى بريدة المركزي</b>
+          Qassim Health Cluster · Buraidah Central Hospital
+          <br><span id="topClock"></span>
+        </div>
+      </div>
+    </div>
+    <div class="wrap"><svg class="ecg" viewBox="0 0 600 26" preserveAspectRatio="none" aria-hidden="true"><path d="M0 13h120l10-3 8 3h40l8-10 10 22 10-12h60l10-3 8 3h120l10-10 10 22 10-12h60" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg></div>
+  </header>
+
+  <div class="wrap">
+    <!-- ============ شاشة إدخال البيانات ============ -->
+    <main id="screenEntry">
+      <div id="formRoot"></div>
+      <p id="draftStatus" class="draft"></p>
+    </main>
+
+    <!-- ============ شاشة التقرير ============ -->
+    <main id="screenReport" hidden>
+      <div class="rhead">
+        <button type="button" id="backBtn" class="btn ghost"><span data-ic="arrowRight"></span> رجوع للتعديل</button>
+        <div><h2>التقرير · ER STATS REPORT</h2><p id="rmeta"></p></div>
+      </div>
+      <div id="previewBanner" class="banner" hidden>هذه معاينة فقط (عليها علامة PREVIEW) ولا يمكن تنزيلها. اضغط «إنشاء التقرير النهائي» لإصدار الصور الجاهزة للإرسال.</div>
+
+      <div class="viewer">
+        <button type="button" id="prevBtn" class="navbtn" aria-label="الصورة السابقة"><span data-ic="arrowRight" data-s="26"></span></button>
+        <div class="imgbox"><img id="rimg" alt="التقرير"></div>
+        <button type="button" id="nextBtn" class="navbtn next" aria-label="الصورة التالية"><span data-ic="arrowRight" data-s="26"></span></button>
+      </div>
+      <div class="pager" id="pageLabel"></div>
+      <div id="thumbs"></div>
+
+      <div id="finalActions" class="ractions">
+        <button type="button" id="rShare" class="btn wa"><span data-ic="whatsapp"></span><span>مشاركة عبر WhatsApp <small>Share</small></span></button>
+        <button type="button" id="dlOne" class="btn primary"><span data-ic="download"></span><span class="t">تنزيل الصورة (PNG)</span></button>
+        <button type="button" id="dlZip" class="btn" hidden><span data-ic="zip"></span><span>تنزيل كل الصور (ZIP)</span></button>
+        <button type="button" id="newReport" class="btn"><span data-ic="refresh"></span><span>تقرير جديد</span></button>
+      </div>
+      <div id="previewActions" class="ractions" hidden>
+        <button type="button" id="pvFinal" class="btn primary"><span data-ic="image"></span><span>إنشاء التقرير النهائي</span></button>
+        <button type="button" id="pvBack" class="btn"><span data-ic="arrowRight"></span><span>رجوع للتعديل</span></button>
+      </div>
+      <p class="tip">إذا لم تظهر المشاركة المباشرة في متصفحك فسيتم تنزيل الصورة، ثم أرفقها في واتساب يدوياً.</p>
+    </main>
+  </div>
+
+  <!-- ============ شريط الأوامر ============ -->
+  <nav id="actionbar" aria-label="الأوامر">
+    <div class="row">
+      <button type="button" class="abtn" id="btnPreview"><span data-ic="eye"></span><b>معاينة</b><i>PREVIEW</i></button>
+      <button type="button" class="abtn pri" id="btnGenerate"><span data-ic="image"></span><b>إنشاء التقرير</b><i>GENERATE</i></button>
+      <button type="button" class="abtn" id="btnDownload"><span data-ic="download"></span><b>تحميل PNG</b><i>DOWNLOAD</i></button>
+      <button type="button" class="abtn wa" id="btnShare"><span data-ic="whatsapp"></span><b>واتساب</b><i>WHATSAPP</i></button>
+      <button type="button" class="abtn clr" id="btnClear"><span data-ic="trash"></span><b>مسح الكل</b><i>CLEAR ALL</i></button>
+    </div>
+  </nav>
+
+  <div id="modal" class="modal" hidden></div>
+  <div id="busy" hidden><div><div class="spin"></div><div id="busyMsg">جارٍ إنشاء التقرير…</div></div></div>
+  <div id="toast" hidden role="status"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/zip.js"></script>
+  <script src="js/report.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

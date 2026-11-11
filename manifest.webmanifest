@@ -1,0 +1,17 @@
+{
+  "name": "CareLink – ER STATS REPORT",
+  "short_name": "ER Stats",
+  "description": "تقرير الحالة التشغيلية لقسم الطوارئ – مستشفى بريدة المركزي",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0A2A5E",
+  "theme_color": "#0A2A5E",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
