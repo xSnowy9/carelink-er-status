@@ -17,7 +17,7 @@
       ras: null, iso: '',
       resus: { count: '', countManual: false, rows: [newRow()] },
       clouded: { count: '', countManual: false, rows: [newRow()] },
-      rta: { count: '', action: '' }, crescent: { count: '', action: '' }, transfer: '',
+      rta: { count: '', action: '' }, crescent: { count: '', action: '' }, transferCount: '', transfer: '',
       tech: '', paramedic: null, team: '', reception: '', mgmt: '', remarks: ''
     };
   }
@@ -106,7 +106,7 @@
     /* 5) الحالات والحوادث */
     h += section('rta', K.rta, 'car', 'حالات حوادث السير', 'RTA', numField('rta.count', 'عدد المستفيدين', 'Cases Count') + textArea('rta.action', 'الإجراء', 'Action / Procedure', 3));
     h += section('crescent', K.crescent, 'ambulance', 'حالات الهلال الأحمر', 'Red Crescent', numField('crescent.count', 'عدد المستفيدين', 'Cases Count') + textArea('crescent.action', 'الإجراء', 'Action / Procedure', 3));
-    h += section('transfer', K.transfer, 'transfer', 'الحالات المحولة لمستشفى آخر', 'Transferred-out Cases', textArea('transfer', 'التفاصيل والإجراءات المتخذة', 'Details / Action', 3));
+    h += section('transfer', K.transfer, 'transfer', 'الحالات المحولة لمستشفى آخر', 'Transferred-out Cases', numField('transferCount', 'عدد الحالات المحولة', 'Total Transferred Cases') + textArea('transfer', 'التفاصيل والإجراءات المتخذة', 'Details / Action', 3));
 
     /* 6) الأعطال */
     h += section('tech', K.tech, 'monitor', 'الأعطال الفنية والتقنية', 'Technical & IT Issues', textArea('tech', 'الأعطال والملاحظات التشغيلية', 'Faults, systems, devices, notes', 4, 'اكتب الأعطال والأجهزة والأنظمة… / Faults, devices, systems…'));
@@ -258,7 +258,7 @@
     ['trauma.beds', 'الإصابات – الأسرة'], ['trauma.wait', 'الإصابات – الانتظار'],
     ['fast.beds', 'الفحص السريع – الأسرة'], ['fast.wait', 'الفحص السريع – الانتظار'],
     ['ras', 'حالة RAS'], ['iso', 'العزل'],
-    ['rta.count', 'عدد حوادث السير'], ['crescent.count', 'عدد حالات الهلال الأحمر'],
+    ['rta.count', 'عدد حوادث السير'], ['transferCount', 'عدد الحالات المحولة'], ['crescent.count', 'عدد حالات الهلال الأحمر'],
     ['paramedic', 'حالة المسعف'], ['team', 'عدد فريق كيرلينك'], ['reception', 'عدد الاستقبال']
   ];
   function missingFields() {

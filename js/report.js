@@ -370,7 +370,7 @@
     CL.drawIcon(ctx, p.icon, icx, icy, 46, c, 2);
 
     var chipW = 0;
-    if (p.chip) chipW = w > 1200 ? 440 : 340;
+    if (p.chip) chipW = w > 1200 ? 440 : (p.chipW || 340);
     var tr = icx - 38 - 18;
     var maxW = tr - (x + 22 + (chipW ? chipW + 18 : 0));
     var ar = p.title.ar + (p.cont ? ' (تابع)' : '');
@@ -382,8 +382,8 @@
       var cx0 = x + 22, ch = 80, cy0 = y + (hdr - ch) / 2;
       ctx.fillStyle = '#fff'; rr(ctx, cx0, cy0, chipW, ch, 22); ctx.fill();
       T(ctx, p.chip.val, cx0 + 66, cy0 + 62, { size: 58, weight: '800', color: c, maxW: 108, min: 30, dir: 'ltr' });
-      T(ctx, p.chip.ar, cx0 + chipW - 16, cy0 + 34, { size: 27, weight: '700', color: INK, align: 'right', dir: 'rtl', maxW: chipW - 150, min: 18 });
-      T(ctx, p.chip.en, cx0 + chipW - 16, cy0 + 64, { size: 22, weight: '500', color: MUTE, align: 'right', dir: 'ltr', maxW: chipW - 150, min: 15 });
+      T(ctx, p.chip.ar, cx0 + chipW - 16, cy0 + 34, { size: 27, weight: '700', color: INK, align: 'right', dir: 'rtl', maxW: chipW - 140, min: 18 });
+      T(ctx, p.chip.en, cx0 + chipW - 16, cy0 + 64, { size: 22, weight: '500', color: MUTE, align: 'right', dir: 'ltr', maxW: chipW - 140, min: 15 });
     }
 
     /* حدّ ملوّن حول البطاقة */
@@ -690,7 +690,7 @@
       cols: [
         { type: 'text', weight: 1, color: K.rta, icon: 'car', title: { ar: 'حوادث السير', en: 'RTA' }, chip: { ar: 'عدد المستفيدين', en: 'Cases Count', val: nv(d.rta.count) }, paras: [d.rta.action || ''], head: function () { return [labelUnit('الإجراء', 'Action / Procedure')]; } },
         { type: 'text', weight: 1, color: K.crescent, icon: 'ambulance', title: { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, chip: { ar: 'عدد المستفيدين', en: 'Cases Count', val: nv(d.crescent.count) }, paras: [d.crescent.action || ''], head: function () { return [labelUnit('الإجراء', 'Action / Procedure')]; } },
-        { type: 'text', weight: 1, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, paras: [d.transfer || ''], head: function () { return [labelUnit('التفاصيل / الإجراء', 'Details / Action')]; } }
+        { type: 'text', weight: 1.4, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, chipW: 440, chip: { ar: 'عدد الحالات المحولة', en: 'Total Transferred Cases', val: nv(d.transferCount) }, paras: [d.transfer || ''], head: function () { return [labelUnit('التفاصيل / الإجراء', 'Details / Action')]; } }
       ]
     });
 
