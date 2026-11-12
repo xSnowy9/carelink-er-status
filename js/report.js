@@ -8,23 +8,25 @@
   var K = CL.COLORS;
   var FF = CL.FONT;
 
-  var PW = 3000, PH = 3000;      // أبعاد كل صورة
+  var PW = 3000, PH = 4500;      // أبعاد كل صورة
   var MX = 90;                   // الهامش الجانبي
   var CW = PW - MX * 2;          // عرض المحتوى
-  var GAP = 24;
-  var HDRH = 116;                // ارتفاع رأس البطاقة
-  var PADX = 36, PADT = 22, PADB = 22;
+  var GAP = 36;                  // المسافة الموحدة بين البطاقات
+  var GG = 64;                   // المسافة قبل عنوان مجموعة جديدة
+  var BANDH = 104;               // ارتفاع شريط عنوان المجموعة
+  var HDRH = 132;                // ارتفاع رأس البطاقة
+  var PADX = 40, PADT = 30, PADB = 30;
   var R = 40;                    // استدارة البطاقات
-  var HDR1 = 505;                // بداية المحتوى في الصفحة الأولى
+  var HDR1 = 550;                // بداية المحتوى في الصفحة الأولى
   var HDRN = 345;                // بداية المحتوى في الصفحات التالية
-  var FOOT = 100;
+  var FOOT = 370;
   var CH = PH;                   // ارتفاع الصورة الحالي (ديناميكي)
   var RY0 = -1e9, RY1 = 1e9;     // نطاق الرسم الحالي (للرسم على شرائح)
   var SAFE_AREA = 16000000;      // مساحة آمنة لـ Canvas واحد على كل الأجهزة
   var STRIP = 500;               // ارتفاع الشريحة عند الرسم المقسّم
 
   var INK = K.ink, MUTE = K.mute;
-  var BODY = 46, LH = 58;        // خط النصوص وارتفاع السطر
+  var BODY = 56, LH = 74;        // خط النصوص وارتفاع السطر
 
   var mctx = document.createElement('canvas').getContext('2d');
 
@@ -140,27 +142,27 @@
   }
   function emptyUnit(textAr, textEn) {
     return {
-      h: 74,
+      h: 100,
       draw: function (ctx, x, y, w) {
-        T(ctx, textAr || '—', x + w / 2, y + 50, { size: 40, weight: '500', color: '#8A97AD', align: 'center', dir: 'rtl' });
+        T(ctx, textAr || '—', x + w / 2, y + 64, { size: 46, weight: '500', color: '#8A97AD', align: 'center', dir: 'rtl' });
         if (textEn) { /* السطر الإنجليزي اختياري */ }
       }
     };
   }
   function labelUnit(ar, en) {
     return {
-      h: 70,
+      h: 88,
       draw: function (ctx, x, y, w, c) {
-        T(ctx, ar, x + w, y + 40, { size: 38, weight: '700', color: c, align: 'right', dir: 'rtl' });
-        T(ctx, en, x, y + 40, { size: 30, weight: '500', color: MUTE, align: 'left', dir: 'ltr' });
-        ctx.strokeStyle = tint(c, 0.6); ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(x, y + 58); ctx.lineTo(x + w, y + 58); ctx.stroke();
+        T(ctx, ar, x + w, y + 48, { size: 46, weight: '700', color: c, align: 'right', dir: 'rtl', maxW: w * 0.58, min: 28 });
+        T(ctx, en, x, y + 48, { size: 34, weight: '500', color: MUTE, align: 'left', dir: 'ltr', maxW: w * 0.4, min: 20 });
+        ctx.strokeStyle = tint(c, 0.6); ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(x, y + 70); ctx.lineTo(x + w, y + 70); ctx.stroke();
       }
     };
   }
   /* صناديق الأرقام: items من اليمين إلى اليسار */
   function statUnit(items, sh, compact) {
-    sh = sh || 200;
+    sh = sh || 240;
     return {
       h: sh,
       draw: function (ctx, x, y, w, c) {
@@ -169,27 +171,27 @@
           ctx.fillStyle = tint(c, 0.92); rr(ctx, x, y, w, sh, 28); ctx.fill();
           ctx.strokeStyle = tint(c, 0.6); ctx.lineWidth = 3; rr(ctx, x, y, w, sh, 28); ctx.stroke();
           var mid = y + sh / 2;
-          T(ctx, it0.val, x + w * 0.27, mid + 30, { size: has0 ? 86 : 70, weight: '800', color: has0 ? c : '#9AA7BD', maxW: w * 0.44, min: 44, dir: 'ltr' });
-          T(ctx, it0.ar, x + w - 24, mid - 4, { size: 40, weight: '700', color: INK, align: 'right', maxW: w * 0.4, min: 24, dir: 'rtl' });
-          T(ctx, it0.en, x + w - 24, mid + 36, { size: 30, weight: '500', color: MUTE, align: 'right', maxW: w * 0.4, min: 20, dir: 'ltr' });
+          T(ctx, it0.val, x + w * 0.25, mid + 46, { size: has0 ? 132 : 96, weight: '800', color: has0 ? c : '#9AA7BD', maxW: w * 0.40, min: 56, dir: 'ltr' });
+          T(ctx, it0.ar, x + w - 30, mid - 4, { size: 46, weight: '700', color: INK, align: 'right', maxW: w * 0.5, min: 26, dir: 'rtl' });
+          T(ctx, it0.en, x + w - 30, mid + 44, { size: 34, weight: '500', color: MUTE, align: 'right', maxW: w * 0.5, min: 20, dir: 'ltr' });
           return;
         }
         var n = items.length, gap = 18, bw = (w - gap * (n - 1)) / n;
         items.forEach(function (it, i) {
           var bx = x + w - (i + 1) * bw - i * gap;
-          ctx.fillStyle = tint(c, 0.92); rr(ctx, bx, y, bw, 200, 28); ctx.fill();
-          ctx.strokeStyle = tint(c, 0.6); ctx.lineWidth = 3; rr(ctx, bx, y, bw, 200, 28); ctx.stroke();
-          T(ctx, it.ar, bx + bw / 2, y + 44, { size: 38, weight: '700', color: INK, maxW: bw - 24, min: 24, dir: 'rtl' });
-          T(ctx, it.en, bx + bw / 2, y + 80, { size: 30, weight: '500', color: MUTE, maxW: bw - 24, min: 20, dir: 'ltr' });
+          ctx.fillStyle = tint(c, 0.92); rr(ctx, bx, y, bw, sh, 30); ctx.fill();
+          ctx.strokeStyle = tint(c, 0.6); ctx.lineWidth = 3; rr(ctx, bx, y, bw, sh, 30); ctx.stroke();
+          T(ctx, it.ar, bx + bw / 2, y + 56, { size: 44, weight: '700', color: INK, maxW: bw - 24, min: 24, dir: 'rtl' });
+          T(ctx, it.en, bx + bw / 2, y + 98, { size: 33, weight: '500', color: MUTE, maxW: bw - 24, min: 20, dir: 'ltr' });
           var has = it.val !== '—';
-          T(ctx, it.val, bx + bw / 2, y + 176, { size: has ? 104 : 80, weight: '800', color: has ? c : '#9AA7BD', maxW: bw - 24, min: 52, dir: 'ltr' });
+          T(ctx, it.val, bx + bw / 2, y + sh - 34, { size: has ? 136 : 96, weight: '800', color: has ? c : '#9AA7BD', maxW: bw - 28, min: 56, dir: 'ltr' });
         });
       }
     };
   }
   /* حالة (مفعل/غير مفعل، متواجد/غير متواجد) */
   function toggleUnit(val, onAr, onEn, offAr, offEn, th) {
-    th = th || 170;
+    th = th || 240;
     return {
       h: th,
       draw: function (ctx, x, y, w, c) {
@@ -198,14 +200,14 @@
         ctx.fillStyle = on || off ? tint(col, 0.9) : '#F1F4F9';
         rr(ctx, x, y, w, th, 30); ctx.fill();
         ctx.strokeStyle = on || off ? col : '#CBD3E1'; ctx.lineWidth = 4; rr(ctx, x, y, w, th, 30); ctx.stroke();
-        var cy = y + th / 2, rad = Math.min(48, th * 0.3);
-        if (!on && !off) { T(ctx, '—', x + w / 2, cy + 30, { size: 90, weight: '700', color: '#9AA7BD', dir: 'ltr' }); return; }
+        var cy = y + th / 2, rad = Math.min(60, th * 0.3);
+        if (!on && !off) { T(ctx, '—', x + w / 2, cy + 30, { size: 110, weight: '700', color: '#9AA7BD', dir: 'ltr' }); return; }
         var cx = x + w - 28 - rad;
         ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2); ctx.fill();
         CL.drawIcon(ctx, on ? 'check' : 'x', cx, cy, rad * 1.12, '#fff', 3);
         var tx = cx - rad - 20, mw = tx - (x + 16);
-        T(ctx, on ? onAr : offAr, tx, cy - 2, { size: 50, weight: '800', color: INK, align: 'right', dir: 'rtl', maxW: mw, min: 28 });
-        T(ctx, on ? onEn : offEn, tx, cy + 40, { size: 36, weight: '600', color: MUTE, align: 'right', dir: 'ltr', maxW: mw, min: 22 });
+        T(ctx, on ? onAr : offAr, tx, cy - 4, { size: 60, weight: '800', color: INK, align: 'right', dir: 'rtl', maxW: mw, min: 30 });
+        T(ctx, on ? onEn : offEn, tx, cy + 48, { size: 42, weight: '600', color: MUTE, align: 'right', dir: 'ltr', maxW: mw, min: 22 });
       }
     };
   }
@@ -213,13 +215,13 @@
   /* ---------- جدول المرضى ---------- */
   function tableHead(iw) {
     return {
-      h: 84,
+      h: 108,
       draw: function (ctx, x, y, w, c) {
         var cols = tableCols(w);
-        ctx.fillStyle = tint(c, 0.86); rr(ctx, x, y, w, 84, 18); ctx.fill();
+        ctx.fillStyle = tint(c, 0.86); rr(ctx, x, y, w, 108, 20); ctx.fill();
         function cell(col, ar, en) {
-          T(ctx, ar, x + col.x + col.w / 2, y + 36, { size: 30, weight: '700', color: INK, maxW: col.w - 12, min: 20, dir: 'rtl' });
-          T(ctx, en, x + col.x + col.w / 2, y + 68, { size: 24, weight: '500', color: MUTE, maxW: col.w - 12, min: 16, dir: 'ltr' });
+          T(ctx, ar, x + col.x + col.w / 2, y + 46, { size: 38, weight: '700', color: INK, maxW: col.w - 12, min: 22, dir: 'rtl' });
+          T(ctx, en, x + col.x + col.w / 2, y + 88, { size: 30, weight: '500', color: MUTE, maxW: col.w - 12, min: 18, dir: 'ltr' });
         }
         cell(cols.num, '#', '');
         cell(cols.name, 'اسم المستفيد', 'Patient Name');
@@ -229,7 +231,7 @@
     };
   }
   function tableCols(w) {
-    var num = 80, mrn = 240, bed = 200;
+    var num = 90, mrn = 320, bed = 230;
     var name = w - num - mrn - bed;
     var x = w; // مرسوم من اليمين
     var out = {};
@@ -241,9 +243,9 @@
   }
   function rowUnit(row, w) {
     var nameW = tableCols(w).name.w - 28;
-    var lines = wrap(row.name || '', fnt('500', 42), nameW);
+    var lines = wrap(row.name || '', fnt('500', 50), nameW);
     if (!lines.length) lines = [{ t: '' }];
-    var h = Math.max(78, lines.length * 54 + 26);
+    var h = Math.max(100, lines.length * 68 + 32);
     return {
       h: h,
       draw: function (ctx, x, y, ww, c) {
@@ -251,34 +253,34 @@
         if (row.idx % 2 === 0) { ctx.fillStyle = tint(c, 0.95); rr(ctx, x, y, ww, h, 14); ctx.fill(); }
         ctx.strokeStyle = tint(c, 0.82); ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x + 10, y + h); ctx.lineTo(x + ww - 10, y + h); ctx.stroke();
-        T(ctx, row.idx, x + cols.num.x + cols.num.w / 2, y + 52, { size: 36, weight: '700', color: c, dir: 'ltr' });
+        T(ctx, row.idx, x + cols.num.x + cols.num.w / 2, y + 66, { size: 42, weight: '700', color: c, dir: 'ltr' });
         lines.forEach(function (l, i) {
           if (!l.t) return;
           var d = dirOf(l.t);
-          T(ctx, l.t, d === 'rtl' ? x + cols.name.x + cols.name.w - 14 : x + cols.name.x + 14, y + 52 + i * 54, { size: 42, weight: '500', color: INK, align: d === 'rtl' ? 'right' : 'left', dir: d });
+          T(ctx, l.t, d === 'rtl' ? x + cols.name.x + cols.name.w - 14 : x + cols.name.x + 14, y + 66 + i * 68, { size: 50, weight: '500', color: INK, align: d === 'rtl' ? 'right' : 'left', dir: d });
         });
-        T(ctx, row.mrn || '—', x + cols.mrn.x + cols.mrn.w / 2, y + 52, { size: 42, weight: '600', color: row.mrn ? INK : '#9AA7BD', maxW: cols.mrn.w - 16, min: 22, dir: 'ltr' });
-        T(ctx, row.bed || '—', x + cols.bed.x + cols.bed.w / 2, y + 52, { size: 42, weight: '800', color: row.bed ? c : '#9AA7BD', maxW: cols.bed.w - 16, min: 22, dir: 'ltr' });
+        T(ctx, row.mrn || '—', x + cols.mrn.x + cols.mrn.w / 2, y + 66, { size: 50, weight: '600', color: row.mrn ? INK : '#9AA7BD', maxW: cols.mrn.w - 16, min: 22, dir: 'ltr' });
+        T(ctx, row.bed || '—', x + cols.bed.x + cols.bed.w / 2, y + 66, { size: 50, weight: '800', color: row.bed ? c : '#9AA7BD', maxW: cols.bed.w - 16, min: 22, dir: 'ltr' });
       }
     };
   }
 
   /* ---------- جدول المسؤولين (Management) ---------- */
   function mgrCols(w) {
-    var num = 80, title = Math.floor((w - num) * 0.46), name = w - num - title;
+    var num = 90, title = Math.floor((w - num) * 0.46), name = w - num - title;
     var cx = w, o = {};
     [['num', num], ['title', title], ['name', name]].forEach(function (c) { cx -= c[1]; o[c[0]] = { x: cx, w: c[1] }; });
     return o;
   }
   function mgrHead(iw) {
     return {
-      h: 84,
+      h: 108,
       draw: function (ctx, x, y, w, c) {
         var cols = mgrCols(w);
-        ctx.fillStyle = tint(c, 0.86); rr(ctx, x, y, w, 84, 18); ctx.fill();
+        ctx.fillStyle = tint(c, 0.86); rr(ctx, x, y, w, 108, 20); ctx.fill();
         function cell(col, ar, en) {
-          T(ctx, ar, x + col.x + col.w / 2, y + 36, { size: 30, weight: '700', color: INK, maxW: col.w - 12, min: 20, dir: 'rtl' });
-          if (en) T(ctx, en, x + col.x + col.w / 2, y + 68, { size: 24, weight: '500', color: MUTE, maxW: col.w - 12, min: 16, dir: 'ltr' });
+          T(ctx, ar, x + col.x + col.w / 2, y + 46, { size: 38, weight: '700', color: INK, maxW: col.w - 12, min: 22, dir: 'rtl' });
+          if (en) T(ctx, en, x + col.x + col.w / 2, y + 88, { size: 30, weight: '500', color: MUTE, maxW: col.w - 12, min: 18, dir: 'ltr' });
         }
         cell(cols.num, '#', '');
         cell(cols.title, 'المسمى الوظيفي', 'Position / Title');
@@ -288,10 +290,10 @@
   }
   function mgrRow(row, w) {
     var cols = mgrCols(w);
-    var f = fnt('500', 42);
+    var f = fnt('500', 50);
     var tl = wrap(row.title || '', f, cols.title.w - 28), nl = wrap(row.name || '', f, cols.name.w - 28);
     var n = Math.max(1, tl.length, nl.length);
-    var h = Math.max(78, n * 54 + 26);
+    var h = Math.max(100, n * 68 + 32);
     return {
       h: h,
       draw: function (ctx, x, y, ww, c) {
@@ -299,12 +301,12 @@
         if (row.idx % 2 === 0) { ctx.fillStyle = tint(c, 0.95); rr(ctx, x, y, ww, h, 14); ctx.fill(); }
         ctx.strokeStyle = tint(c, 0.82); ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x + 10, y + h); ctx.lineTo(x + ww - 10, y + h); ctx.stroke();
-        T(ctx, row.idx, x + cs.num.x + cs.num.w / 2, y + 52, { size: 36, weight: '700', color: c, dir: 'ltr' });
+        T(ctx, row.idx, x + cs.num.x + cs.num.w / 2, y + 66, { size: 42, weight: '700', color: c, dir: 'ltr' });
         function col(lines, cc, bold) {
           lines.forEach(function (l, i) {
             if (!l.t) return;
             var d = dirOf(l.t);
-            T(ctx, l.t, d === 'rtl' ? x + cc.x + cc.w - 14 : x + cc.x + 14, y + 52 + i * 54, { size: 42, weight: bold ? '700' : '500', color: INK, align: d === 'rtl' ? 'right' : 'left', dir: d });
+            T(ctx, l.t, d === 'rtl' ? x + cc.x + cc.w - 14 : x + cc.x + 14, y + 66 + i * 68, { size: 50, weight: bold ? '700' : '500', color: INK, align: d === 'rtl' ? 'right' : 'left', dir: d });
           });
         }
         col(tl, cs.title, true); col(nl, cs.name, false);
@@ -427,18 +429,18 @@
     g.addColorStop(0, shade(c, 0.32)); g.addColorStop(1, c);
     ctx.fillStyle = g; rr(ctx, x, y, w, hdr, [R, R, 0, 0]); ctx.fill();
 
-    var icx = x + w - 28 - 38, icy = y + hdr / 2;
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(icx, icy, 38, 0, Math.PI * 2); ctx.fill();
-    CL.drawIcon(ctx, p.icon, icx, icy, 46, c, 2);
+    var icx = x + w - 30 - 44, icy = y + hdr / 2;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(icx, icy, 44, 0, Math.PI * 2); ctx.fill();
+    CL.drawIcon(ctx, p.icon, icx, icy, 54, c, 2);
 
     var chipW = 0;
     if (p.chip) chipW = w > 1200 ? 440 : (p.chipW || 340);
-    var tr = icx - 38 - 18;
-    var maxW = tr - (x + 22 + (chipW ? chipW + 18 : 0));
+    var tr = icx - 44 - 20;
+    var maxW = tr - (x + 40 + (chipW ? chipW + 18 : 0));
     var ar = p.title.ar + (p.cont ? ' (تابع)' : '');
     var en = p.title.en + (p.cont ? ' (cont.)' : '');
-    T(ctx, ar, tr, icy - 6, { size: 44, weight: '800', color: '#fff', align: 'right', dir: 'rtl', maxW: maxW, min: 26 });
-    T(ctx, en, tr, icy + 32, { size: 31, weight: '500', color: 'rgba(255,255,255,.86)', align: 'right', dir: 'ltr', maxW: maxW, min: 20 });
+    T(ctx, ar, tr, icy - 6, { size: 54, weight: '800', color: '#fff', align: 'right', dir: 'rtl', maxW: maxW, min: 30 });
+    T(ctx, en, tr, icy + 40, { size: 36, weight: '500', color: 'rgba(255,255,255,.86)', align: 'right', dir: 'ltr', maxW: maxW, min: 20 });
 
     if (p.chip) {
       var cx0 = x + 22, ch = 80, cy0 = y + (hdr - ch) / 2;
@@ -449,7 +451,7 @@
     }
 
     /* حدّ ملوّن حول البطاقة */
-    ctx.strokeStyle = c; ctx.lineWidth = 5; rr(ctx, x, y, w, H, R); ctx.stroke();
+    ctx.strokeStyle = c; ctx.lineWidth = 6; rr(ctx, x, y, w, H, R); ctx.stroke();
 
     /* الوحدات */
     var total = sum(it.units);
@@ -465,19 +467,19 @@
     var c = p.color;
     ctx.strokeStyle = tint(c, 0.55); ctx.lineWidth = 4; rr(ctx, x, y, w, H, R); ctx.stroke();
     var cy = y + H / 2;
-    var icx = x + w - 40 - 62;
-    var g = ctx.createLinearGradient(icx - 62, cy - 62, icx + 62, cy + 62);
+    var icx = x + w - 44 - 74;
+    var g = ctx.createLinearGradient(icx - 74, cy - 74, icx + 74, cy + 74);
     g.addColorStop(0, '#2B7BE0'); g.addColorStop(1, K.navy);
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(icx, cy, 62, 0, Math.PI * 2); ctx.fill();
-    CL.drawIcon(ctx, p.icon, icx, cy, 70, '#fff', 1.9);
-    var bw = 380, bh = Math.min(150, H - 36), bx = x + 36;
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(icx, cy, 74, 0, Math.PI * 2); ctx.fill();
+    CL.drawIcon(ctx, p.icon, icx, cy, 84, '#fff', 1.9);
+    var bw = 430, bh = Math.min(184, H - 40), bx = x + 40;
     ctx.fillStyle = tint(c, 0.93); rr(ctx, bx, cy - bh / 2, bw, bh, 28); ctx.fill();
     ctx.strokeStyle = tint(c, 0.55); ctx.lineWidth = 3; rr(ctx, bx, cy - bh / 2, bw, bh, 28); ctx.stroke();
     var has = p.val !== '—';
-    T(ctx, p.val, bx + bw / 2, cy + 40, { size: has ? 112 : 84, weight: '800', color: has ? c : '#9AA7BD', maxW: bw - 40, min: 56, dir: 'ltr' });
-    var tr = icx - 62 - 26, mw = tr - (bx + bw + 24);
-    T(ctx, p.label.ar, tr, cy - 6, { size: 46, weight: '800', color: INK, align: 'right', dir: 'rtl', maxW: mw, min: 26 });
-    T(ctx, p.label.en, tr, cy + 40, { size: 33, weight: '500', color: MUTE, align: 'right', dir: 'ltr', maxW: mw, min: 20 });
+    T(ctx, p.val, bx + bw / 2, cy + 54, { size: has ? 150 : 100, weight: '800', color: has ? c : '#9AA7BD', maxW: bw - 40, min: 60, dir: 'ltr' });
+    var tr = icx - 74 - 30, mw = tr - (bx + bw + 28);
+    T(ctx, p.label.ar, tr, cy - 6, { size: 54, weight: '800', color: INK, align: 'right', dir: 'rtl', maxW: mw, min: 30 });
+    T(ctx, p.label.en, tr, cy + 48, { size: 38, weight: '500', color: MUTE, align: 'right', dir: 'ltr', maxW: mw, min: 20 });
   }
 
   /* ========================================================
@@ -681,17 +683,34 @@
   }
 
   function drawFooter(ctx, snap, pi, total) {
-    var y = CH - FOOT;
-    if (RY1 < y - 40) return;
-    ctx.fillStyle = 'rgba(4,16,48,.78)'; ctx.fillRect(0, y, PW, FOOT);
+    var y0 = CH - FOOT;
+    if (RY1 < y0 - 40) return;
+    /* آخر تحديث: اليوم والتاريخ والوقت والوردية */
+    ctx.fillStyle = 'rgba(255,255,255,.10)'; rr(ctx, MX, y0 + 6, CW, 70, 26); ctx.fill();
+    T(ctx, 'آخر تحديث', PW / 2 + 30, y0 + 56, { size: 46, weight: '800', color: '#fff', align: 'left', dir: 'rtl' });
+    T(ctx, 'LAST UPDATE', PW / 2 + 12, y0 + 56, { size: 36, weight: '600', color: '#CFE3FF', align: 'right', dir: 'ltr' });
+    drawDateStrip(ctx, snap, y0 + 96, 140);
+    /* الشريط السفلي */
+    var y = CH - 100;
+    ctx.fillStyle = 'rgba(4,16,48,.78)'; ctx.fillRect(0, y, PW, 100);
     ecgLine(ctx, 0, PW, y, 22, 'rgba(255,70,90,.7)', 5, 12);
     var cy = y + 66;
     T(ctx, 'CareLink – ER STATS REPORT', PW / 2, cy, { size: 40, weight: '800', color: '#fff', dir: 'ltr' });
     CL.drawIcon(ctx, 'heart', PW / 2 - 440, cy - 12, 46, '#fff', 1.6);
     T(ctx, 'Qassim Health Cluster · Buraidah Central Hospital', MX, cy, { size: 30, weight: '500', color: '#CFE3FF', align: 'left', dir: 'ltr' });
     var n = snap.now;
-    var right = 'Generated ' + n.dateEn + ' · ' + n.timeEn + ' (Asia/Riyadh)' + (total > 1 ? '   |   ' + (pi + 1) + '/' + total : '');
+    var right = 'Generated ' + n.dateEn + ' · ' + n.timeEn + ' (Asia/Riyadh)';
     T(ctx, right, PW - MX, cy, { size: 30, weight: '500', color: '#CFE3FF', align: 'right', dir: 'ltr' });
+  }
+
+  /* شريط عنوان مجموعة */
+  function drawBand(ctx, b, y) {
+    if (y > RY1 + 40 || y + BANDH < RY0 - 40) return;
+    ctx.fillStyle = 'rgba(255,255,255,.10)'; rr(ctx, MX, y, CW, BANDH, 32); ctx.fill();
+    ctx.strokeStyle = 'rgba(140,200,255,.5)'; ctx.lineWidth = 3; rr(ctx, MX, y, CW, BANDH, 32); ctx.stroke();
+    ctx.fillStyle = '#4FA8FF'; rr(ctx, MX + CW - 44, y + 24, 14, BANDH - 48, 7); ctx.fill();
+    T(ctx, b.ar, MX + CW - 70, y + 68, { size: 56, weight: '800', color: '#fff', align: 'right', dir: 'rtl', maxW: CW * 0.55, min: 32 });
+    T(ctx, b.en, MX + 44, y + 66, { size: 38, weight: '600', color: '#CFE3FF', align: 'left', dir: 'ltr', maxW: CW * 0.36, min: 22 });
   }
 
   function drawWatermark(ctx) {
@@ -734,79 +753,94 @@
     var sh = CL.SHIFTS[snap.shift];
     var staticP = function (o) { return Object.assign({ type: 'static', weight: 1 }, o); };
     var blocks = [];
+    var band = function (ar, en) { blocks.push({ band: { ar: ar, en: en } }); };
 
+    band('المؤشرات الرئيسية', 'KEY STATISTICS');
     blocks.push({
       atomic: true,
       cols: [
-        { hero: true, fixedH: 176, color: K.navy, icon: 'users', label: { ar: 'عدد المستفيدين من بداية اليوم', en: 'Total ER Arrivals (From Start of Day)' }, val: nv(d.arrDay), type: 'static', weight: 1 },
-        { hero: true, fixedH: 176, color: K.navy, icon: 'users', label: { ar: 'عدد المستفيدين بالفترة الحالية', en: 'Arrivals in Current Shift' }, val: nv(d.arrShift), type: 'static', weight: 1 }
+        { hero: true, fixedH: 230, color: K.navy, icon: 'users', label: { ar: 'عدد المستفيدين من بداية اليوم', en: 'Total ER Arrivals (From Start of Day)' }, val: nv(d.arrDay), type: 'static', weight: 1 },
+        { hero: true, fixedH: 230, color: K.navy, icon: 'users', label: { ar: 'عدد المستفيدين بالفترة الحالية', en: 'Arrivals in Current Shift' }, val: nv(d.arrShift), type: 'static', weight: 1 }
       ]
     });
 
     var bedsWait = function (o) {
       return [statUnit([{ ar: 'بالأسرة', en: 'Beds', val: nv(o.beds) }, { ar: 'بالانتظار', en: 'Waiting', val: nv(o.wait) }])];
     };
+    band('أقسام الطوارئ', 'ER DEPARTMENTS');
     blocks.push({
       atomic: true,
       cols: [
         staticP({ color: K.acute, icon: 'bed', title: { ar: 'العناية المتوسطة', en: 'Acute Care' }, pre: function () { return bedsWait(d.acute); } }),
         staticP({ color: K.trauma, icon: 'stretcher', title: { ar: 'الإصابات', en: 'Trauma' }, pre: function () { return bedsWait(d.trauma); } }),
         staticP({ color: K.fast, icon: 'fast', title: { ar: 'الفحص السريع', en: 'Fast Track' }, pre: function () { return bedsWait(d.fast); } }),
-        staticP({ color: K.ras, icon: 'clipboard', title: { ar: 'غرفة التقييم السريع', en: 'RAS' }, pre: function () { return [toggleUnit(d.ras, 'مفعل', 'ON', 'غير مفعل', 'OFF')]; } }),
+        staticP({ color: K.ras, icon: 'clipboard', title: { ar: 'غرفة التقييم السريع', en: 'RAS' }, pre: function () { return [toggleUnit(d.ras, 'مفعل', 'ON', 'غير مفعل', 'OFF', 240)]; } }),
         staticP({ color: K.iso, icon: 'virus', title: { ar: 'العزل', en: 'Isolation' }, pre: function () { return [statUnit([{ ar: 'عدد المستفيدين', en: 'Total Patients', val: nv(d.iso) }])]; } })
       ]
     });
 
+    function countUnit(label, val) { return statUnit([{ ar: label[0], en: label[1], val: nv(val) }], 200, true); }
     /* لوحة عدد فقط (عند إيقاف التفاصيل): رقم كبير بدون مساحة فارغة */
     function countOnly(color, icon, title, label, val, wt) {
-      return staticP({ weight: wt || 1, noStretch: true, color: color, icon: icon, title: title, pre: function () { return [statUnit([{ ar: label[0], en: label[1], val: nv(val) }], 170, true)]; } });
+      return staticP({ weight: wt || 1, noStretch: true, color: color, icon: icon, title: title, pre: function () { return [countUnit(label, val)]; } });
     }
     var resusOn = !!d.resus.details, cloudOn = !!d.clouded.details, rtaOn = !!d.rta.details, rcOn = !!d.crescent.details, trOn = !!d.transferDetails;
     var bedsLbl = ['عدد المستفيدين بالأسرة', 'Beds Count'], caseLbl = ['عدد المستفيدين', 'Cases Count'];
     var actHead = function () { return [labelUnit('الإجراء', 'Action / Procedure')]; };
 
+    band('الإنعاش والتنويم السحابي', 'RESUS & CLOUDED BED');
     blocks.push({
       atomic: false,
       cols: [
         resusOn
-          ? { type: 'table', weight: 1, color: K.resus, icon: 'pulse', title: { ar: 'الإنعاش', en: 'Resus' }, chip: { ar: bedsLbl[0], en: bedsLbl[1], val: nv(d.resus.count) }, rows: cleanRows(d.resus.rows) }
+          ? { type: 'table', weight: 1, color: K.resus, icon: 'pulse', title: { ar: 'الإنعاش', en: 'Resus' }, pre: function () { return [countUnit(bedsLbl, d.resus.count)]; }, rows: cleanRows(d.resus.rows) }
           : countOnly(K.resus, 'pulse', { ar: 'الإنعاش', en: 'Resus' }, bedsLbl, d.resus.count),
         cloudOn
-          ? { type: 'table', weight: 1, color: K.clouded, icon: 'cloud', title: { ar: 'التنويم السحابي', en: 'Clouded Bed' }, chip: { ar: bedsLbl[0], en: bedsLbl[1], val: nv(d.clouded.count) }, rows: cleanRows(d.clouded.rows) }
+          ? { type: 'table', weight: 1, color: K.clouded, icon: 'cloud', title: { ar: 'التنويم السحابي', en: 'Clouded Bed' }, pre: function () { return [countUnit(bedsLbl, d.clouded.count)]; }, rows: cleanRows(d.clouded.rows) }
           : countOnly(K.clouded, 'cloud', { ar: 'التنويم السحابي', en: 'Clouded Bed' }, bedsLbl, d.clouded.count)
       ]
     });
 
+    band('الحوادث والحالات المحولة', 'INCIDENTS & TRANSFERRED CASES');
     blocks.push({
       atomic: false,
       cols: [
         rtaOn
-          ? { type: 'text', weight: 1, color: K.rta, icon: 'car', title: { ar: 'حوادث السير', en: 'RTA' }, chip: { ar: caseLbl[0], en: caseLbl[1], val: nv(d.rta.count) }, paras: [d.rta.action || ''], head: actHead }
+          ? { type: 'text', weight: 1, color: K.rta, icon: 'car', title: { ar: 'حوادث السير', en: 'RTA' }, pre: function () { return [countUnit(caseLbl, d.rta.count)]; }, paras: [d.rta.action || ''], head: actHead }
           : countOnly(K.rta, 'car', { ar: 'حوادث السير', en: 'RTA' }, caseLbl, d.rta.count),
         rcOn
-          ? { type: 'text', weight: 1, color: K.crescent, icon: 'ambulance', title: { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, chip: { ar: caseLbl[0], en: caseLbl[1], val: nv(d.crescent.count) }, paras: [d.crescent.action || ''], head: actHead }
+          ? { type: 'text', weight: 1, color: K.crescent, icon: 'ambulance', title: { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, pre: function () { return [countUnit(caseLbl, d.crescent.count)]; }, paras: [d.crescent.action || ''], head: actHead }
           : countOnly(K.crescent, 'ambulance', { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, caseLbl, d.crescent.count),
         trOn
-          ? { type: 'text', weight: 1.4, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, chipW: 440, chip: { ar: 'عدد الحالات المحولة', en: 'Total Transferred Cases', val: nv(d.transferCount) }, paras: [d.transfer || ''], head: function () { return [labelUnit('تفاصيل التحويل والإجراءات', 'Transfer Details / Actions')]; } }
-          : countOnly(K.transfer, 'transfer', { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, ['عدد الحالات المحولة', 'Total Transferred Cases'], d.transferCount, 1.4)
+          ? { type: 'text', weight: 1, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, pre: function () { return [countUnit(['عدد الحالات المحولة', 'Total Transferred Cases'], d.transferCount)]; }, paras: [d.transfer || ''], head: function () { return [labelUnit('تفاصيل التحويل والإجراءات', 'Transfer Details / Actions')]; } }
+          : countOnly(K.transfer, 'transfer', { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, ['عدد الحالات المحولة', 'Total Transferred Cases'], d.transferCount, 1)
       ]
     });
 
+    band('الأعطال والإدارة', 'TECHNICAL ISSUES & MANAGEMENT');
     blocks.push({
       atomic: false,
       cols: [
-        { type: 'text', weight: 1.7, color: K.tech, icon: 'monitor', title: { ar: 'الأعطال الفنية والتقنية', en: 'Technical & IT Issues' }, paras: [d.tech || ''] },
-        { type: 'mgr', weight: 1.3, color: K.mgmt, icon: 'briefcase', title: { ar: 'الإدارة', en: 'Management' }, rows: cleanMgrs(d.managers) }
+        { type: 'text', weight: 1, color: K.tech, icon: 'monitor', title: { ar: 'الأعطال الفنية والتقنية', en: 'Technical & IT Issues' }, paras: [d.tech || ''] },
+        { type: 'mgr', weight: 1, color: K.mgmt, icon: 'briefcase', title: { ar: 'الإدارة', en: 'Management' }, rows: cleanMgrs(d.managers) }
       ]
     });
 
+    band('الكوادر والخدمات', 'STAFF & SERVICES');
     blocks.push({
       atomic: false,
       cols: [
-        staticP({ weight: 0.85, color: K.paramedic, icon: 'medic', title: { ar: 'المسعف', en: 'Paramedic' }, pre: function () { return [toggleUnit(d.paramedic, 'متواجد', 'Available', 'غير متواجد', 'Not Available', 130)]; } }),
-        staticP({ weight: 0.85, color: K.team, icon: 'users', title: { ar: 'فريق كيرلينك', en: 'CareLink Team' }, pre: function () { return [statUnit([{ ar: 'العدد', en: 'Count', val: nv(d.team) }], 130, true)]; } }),
-        staticP({ weight: 0.85, color: K.recep, icon: 'bell', title: { ar: 'الاستقبال', en: 'Receptionist' }, pre: function () { return [statUnit([{ ar: 'العدد', en: 'Count', val: nv(d.reception) }], 130, true)]; } }),
-        { type: 'text', weight: 2.45, color: K.remarks, icon: 'notes', title: { ar: 'الملاحظات', en: 'Remarks' }, paras: [d.remarks || ''] }
+        staticP({ weight: 1, color: K.paramedic, icon: 'medic', title: { ar: 'المسعف', en: 'Paramedic' }, pre: function () { return [toggleUnit(d.paramedic, 'متواجد', 'Available', 'غير متواجد', 'Not Available', 200)]; } }),
+        staticP({ weight: 1, color: K.team, icon: 'users', title: { ar: 'فريق كيرلينك', en: 'CareLink Team' }, pre: function () { return [statUnit([{ ar: 'العدد', en: 'Count', val: nv(d.team) }], 200, true)]; } }),
+        staticP({ weight: 1, color: K.recep, icon: 'bell', title: { ar: 'الاستقبال', en: 'Receptionist' }, pre: function () { return [statUnit([{ ar: 'العدد', en: 'Count', val: nv(d.reception) }], 200, true)]; } })
+      ]
+    });
+
+    band('الملاحظات', 'REMARKS');
+    blocks.push({
+      atomic: false,
+      cols: [
+        { type: 'text', weight: 1, color: K.remarks, icon: 'notes', title: { ar: 'الملاحظات', en: 'Remarks' }, paras: [d.remarks || ''] }
       ]
     });
     return blocks;
@@ -817,36 +851,47 @@
      ======================================================== */
   function buildLayout(snap) {
     var blocks = buildBlocks(snap), items = [], y = HDR1;
-    blocks.forEach(function (b) {
+    blocks.forEach(function (b, bi) {
+      if (b.band) { items.push({ band: b.band, h: BANDH, extra: 0 }); return; }
       var L = layoutBlock(b, Infinity, true);
-      items.push({ L: L, extra: 0 });
-      y += L.h + GAP;
+      items.push({ L: L, h: L.h, extra: 0 });
     });
-    var end = y - GAP;
-    var H = Math.max(PH, Math.ceil(end + 16 + FOOT));
-    var gapExtra = 0;
-    if (H === PH) {                       /* محتوى قليل: نوزّع المساحة ليبقى التقرير متوازناً */
-      var left = PH - FOOT - 16 - end, nb = items.length;
-      if (left > 0 && nb) {
-        var g1 = Math.min(left * 0.35 / nb, 44); left -= g1 * nb;
-        var e = Math.min(left / nb, 130); left -= e * nb;
-        items.forEach(function (it) { it.extra = e; });
-        gapExtra = g1 + (left > 0 ? left / (nb + 1) : 0);
+    items.forEach(function (it, i) {
+      var nx = items[i + 1];
+      it.gap = !nx ? 0 : it.band ? 26 : (nx.band ? GG : GAP);
+      y += it.h + it.gap;
+    });
+    var end = y;
+    var BOT = 56;
+    var H = Math.max(PH, Math.ceil(end + BOT + FOOT));
+    var top = 0;
+    if (H === PH) {                       /* محتوى قليل: نوزّع المساحة الزائدة بشكل متوازن (مسافات وبطاقات أريح) */
+      var left = PH - FOOT - BOT - end;
+      var blocksN = items.filter(function (it) { return !it.band; }).length;
+      var gaps = items.filter(function (it) { return it.gap > 0; });
+      if (left > 0) {
+        var gx = Math.min(left * 0.4 / Math.max(1, gaps.length), 40);
+        gaps.forEach(function (it) { it.gap += gx; }); left -= gx * gaps.length;
+        var e = Math.min(left * 0.6 / Math.max(1, blocksN), 90);
+        items.forEach(function (it) { if (!it.band) it.extra = e; }); left -= e * blocksN;
+        top = Math.min(left, 40) * 0.5;
+        var more = Math.max(0, left - top * 2) / Math.max(1, gaps.length);
+        gaps.forEach(function (it) { it.gap += more; });
       }
     }
-    return { items: items, H: H, gapExtra: gapExtra };
+    return { items: items, H: H, top: top };
   }
 
   function drawAll(ctx, lay, snap) {
     drawBg(ctx);
     if (RY0 < 600) drawHeader(ctx, snap, 0, 1);
-    var y = HDR1 + lay.gapExtra;
+    var y = HDR1 + lay.top;
     lay.items.forEach(function (it) {
-      var H = it.L.h + it.extra;
+      if (it.band) { drawBand(ctx, it.band, y); y += it.h + it.gap; return; }
       it.L.items.forEach(function (pn) {
-        drawPanel(ctx, pn, y, pn.p.hero ? H : pn.nat + it.extra, it.L.hdr);   // كل بطاقة بارتفاعها الطبيعي: لا تتأثر بجاراتها
+        drawPanel(ctx, pn, y, pn.p.hero ? it.h + it.extra : pn.nat + it.extra, it.L.hdr);   // كل بطاقة بارتفاعها الطبيعي: لا تتأثر بجاراتها
       });
-      y += H + GAP + lay.gapExtra;
+      y += it.h + it.extra + it.gap;
     });
     drawFooter(ctx, snap, 0, 1);
     if (snap.preview) drawWatermark(ctx);
