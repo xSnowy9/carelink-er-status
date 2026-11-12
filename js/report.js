@@ -19,7 +19,7 @@
   var R = 40;                    // استدارة البطاقات
   var HDR1 = 550;                // بداية المحتوى في الصفحة الأولى
   var HDRN = 345;                // بداية المحتوى في الصفحات التالية
-  var FOOT = 370;
+  var FOOT = 100;
   var CH = PH;                   // ارتفاع الصورة الحالي (ديناميكي)
   var RY0 = -1e9, RY1 = 1e9;     // نطاق الرسم الحالي (للرسم على شرائح)
   var SAFE_AREA = 16000000;      // مساحة آمنة لـ Canvas واحد على كل الأجهزة
@@ -684,12 +684,7 @@
 
   function drawFooter(ctx, snap, pi, total) {
     var y0 = CH - FOOT;
-    if (RY1 < y0 - 40) return;
-    /* آخر تحديث: اليوم والتاريخ والوقت والوردية */
-    ctx.fillStyle = 'rgba(255,255,255,.10)'; rr(ctx, MX, y0 + 6, CW, 70, 26); ctx.fill();
-    T(ctx, 'آخر تحديث', PW / 2 + 30, y0 + 56, { size: 46, weight: '800', color: '#fff', align: 'left', dir: 'rtl' });
-    T(ctx, 'LAST UPDATE', PW / 2 + 12, y0 + 56, { size: 36, weight: '600', color: '#CFE3FF', align: 'right', dir: 'ltr' });
-    drawDateStrip(ctx, snap, y0 + 96, 140);
+    if (RY1 < y0 - 140) return;
     /* الشريط السفلي */
     var y = CH - 100;
     ctx.fillStyle = 'rgba(4,16,48,.78)'; ctx.fillRect(0, y, PW, 100);
