@@ -17,7 +17,7 @@
       ras: null, iso: '',
       resus: { count: '', countManual: false, details: false, rows: [newRow()] },
       clouded: { count: '', countManual: false, details: false, rows: [newRow()] },
-      rta: { count: '', details: false, action: '' }, crescent: { count: '', details: false, action: '' }, transferCount: '', transfer: '',
+      rta: { count: '', details: false, action: '' }, crescent: { count: '', details: false, action: '' }, transferCount: '', transferDetails: false, transfer: '',
       tech: '', paramedic: null, team: '', reception: '', managers: [], remarks: ''
     };
   }
@@ -46,8 +46,8 @@
       '<button type="button" class="mini" data-act="grow" aria-label="تكبير الخانة">' + CL.icon('expand', 16) + ' تكبير</button>' +
       '<button type="button" class="mini" data-act="shrink" aria-label="تصغير الخانة">' + CL.icon('shrink', 16) + ' تصغير</button></div></div>';
   }
-  function detailSwitch(tbl, ar, en) {
-    return '<label class="switch detail-sw"><input type="checkbox" data-path="' + tbl + '.details" data-kind="bool"><span class="sw"></span><span><b>' + ar + '</b> <i>' + en + '</i></span></label>';
+  function detailSwitch(tbl, ar, en, path) {
+    return '<label class="switch detail-sw"><input type="checkbox" data-key="' + tbl + '" data-path="' + (path || tbl + '.details') + '" data-kind="bool"><span class="sw"></span><span><b>' + ar + '</b> <i>' + en + '</i></span></label>';
   }
   function seg(path, opts) {
     return '<div class="seg" role="group" data-seg="' + path + '">' + opts.map(function (o) {
@@ -112,7 +112,7 @@
     /* 5) الحالات والحوادث */
     h += section('rta', K.rta, 'car', 'حالات حوادث السير', 'RTA', numField('rta.count', 'عدد المستفيدين', 'Cases Count') + detailSwitch('rta', 'إضافة الإجراء والتفاصيل', 'Add Action / Procedure') + '<div class="detail" data-detail="rta" hidden>' + textArea('rta.action', 'الإجراء', 'Action / Procedure', 3) + '</div>');
     h += section('crescent', K.crescent, 'ambulance', 'حالات الهلال الأحمر', 'Red Crescent', numField('crescent.count', 'عدد المستفيدين', 'Cases Count') + detailSwitch('crescent', 'إضافة الإجراء والتفاصيل', 'Add Action / Procedure') + '<div class="detail" data-detail="crescent" hidden>' + textArea('crescent.action', 'الإجراء', 'Action / Procedure', 3) + '</div>');
-    h += section('transfer', K.transfer, 'transfer', 'الحالات المحولة لمستشفى آخر', 'Transferred-out Cases', numField('transferCount', 'عدد الحالات المحولة', 'Total Transferred Cases') + textArea('transfer', 'التفاصيل والإجراءات المتخذة', 'Details / Action', 3));
+    h += section('transfer', K.transfer, 'transfer', 'الحالات المحولة لمستشفى آخر', 'Transferred-out Cases', numField('transferCount', 'عدد الحالات المحولة', 'Total Transferred Cases') + detailSwitch('transfer', 'إظهار التفاصيل', 'Show Details', 'transferDetails') + '<div class="detail" data-detail="transfer" hidden>' + textArea('transfer', 'تفاصيل التحويل والإجراءات', 'Transfer Details / Actions', 3, 'أسماء المستشفيات، تفاصيل الحالات، الإجراءات، الملاحظات… / Hospitals, case details, actions, notes…') + '</div>');
 
     /* 6) الأعطال */
     h += section('tech', K.tech, 'monitor', 'الأعطال الفنية والتقنية', 'Technical & IT Issues', textArea('tech', 'الأعطال والملاحظات التشغيلية', 'Faults, systems, devices, notes', 4, 'اكتب الأعطال والأجهزة والأنظمة… / Faults, devices, systems…'));
@@ -155,10 +155,12 @@
     var hint = $('[data-mgrhint]');
     if (hint) hint.textContent = state.managers.length ? '' : 'لا يوجد مسؤولون مضافون. اضغط «إضافة مسؤول» عند الحاجة (اختياري).';
   }
+  function detailPath(t) { return t === 'transfer' ? 'transferDetails' : t + '.details'; }
   function applyDetails() {
-    ['resus', 'clouded', 'rta', 'crescent'].forEach(function (t) {
-      var c = $('[data-detail="' + t + '"]'); if (c) c.hidden = !state[t].details;
-      var k = $('[data-path="' + t + '.details"]'); if (k) k.checked = !!state[t].details;
+    ['resus', 'clouded', 'rta', 'crescent', 'transfer'].forEach(function (t) {
+      var on = !!getPath(state, detailPath(t));
+      var c = $('[data-detail="' + t + '"]'); if (c) c.hidden = !on;
+      var k = $('[data-path="' + detailPath(t) + '"]'); if (k) k.checked = on;
     });
   }
   function filledRows(tbl) {
@@ -465,7 +467,7 @@
   function onChange(e) {
     var el = e.target;
     if (el.dataset.kind !== 'bool') return;
-    var t = el.dataset.path.split('.')[0];
+    var t = el.dataset.key || el.dataset.path.split('.')[0];
     setPath(state, el.dataset.path, el.checked);
     applyDetails();
     $$('[data-detail="' + t + '"] textarea').forEach(function (ta) { autosize(ta); updateCount(ta); });
@@ -607,6 +609,7 @@
         base.resus.rows = [newRow()]; base.clouded.rows = [newRow()];
         if (saved.rta && saved.rta.details === undefined && (saved.rta.action || '').trim()) base.rta.details = true;
         if (saved.crescent && saved.crescent.details === undefined && (saved.crescent.action || '').trim()) base.crescent.details = true;
+        if (saved.transferDetails === undefined && (saved.transfer || '').trim()) base.transferDetails = true;
         if (!Array.isArray(base.managers)) base.managers = [];
         if (!base.managers.length && (saved.mgmt || '').trim()) base.managers = [{ title: '', name: String(saved.mgmt).trim() }];
         delete base.mgmt;

@@ -758,10 +758,10 @@
     });
 
     /* لوحة عدد فقط (عند إيقاف التفاصيل): رقم كبير بدون مساحة فارغة */
-    function countOnly(color, icon, title, label, val) {
-      return staticP({ noStretch: true, color: color, icon: icon, title: title, pre: function () { return [statUnit([{ ar: label[0], en: label[1], val: nv(val) }], 170, true)]; } });
+    function countOnly(color, icon, title, label, val, wt) {
+      return staticP({ weight: wt || 1, noStretch: true, color: color, icon: icon, title: title, pre: function () { return [statUnit([{ ar: label[0], en: label[1], val: nv(val) }], 170, true)]; } });
     }
-    var resusOn = !!d.resus.details, cloudOn = !!d.clouded.details, rtaOn = !!d.rta.details, rcOn = !!d.crescent.details;
+    var resusOn = !!d.resus.details, cloudOn = !!d.clouded.details, rtaOn = !!d.rta.details, rcOn = !!d.crescent.details, trOn = !!d.transferDetails;
     var bedsLbl = ['عدد المستفيدين بالأسرة', 'Beds Count'], caseLbl = ['عدد المستفيدين', 'Cases Count'];
     var actHead = function () { return [labelUnit('الإجراء', 'Action / Procedure')]; };
 
@@ -786,7 +786,9 @@
         rcOn
           ? { type: 'text', weight: 1, color: K.crescent, icon: 'ambulance', title: { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, chip: { ar: caseLbl[0], en: caseLbl[1], val: nv(d.crescent.count) }, paras: [d.crescent.action || ''], head: actHead }
           : countOnly(K.crescent, 'ambulance', { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, caseLbl, d.crescent.count),
-        { type: 'text', weight: 1.4, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, chipW: 440, chip: { ar: 'عدد الحالات المحولة', en: 'Total Transferred Cases', val: nv(d.transferCount) }, paras: [d.transfer || ''], head: function () { return [labelUnit('التفاصيل / الإجراء', 'Details / Action')]; } }
+        trOn
+          ? { type: 'text', weight: 1.4, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, chipW: 440, chip: { ar: 'عدد الحالات المحولة', en: 'Total Transferred Cases', val: nv(d.transferCount) }, paras: [d.transfer || ''], head: function () { return [labelUnit('تفاصيل التحويل والإجراءات', 'Transfer Details / Actions')]; } }
+          : countOnly(K.transfer, 'transfer', { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, ['عدد الحالات المحولة', 'Total Transferred Cases'], d.transferCount, 1.4)
       ]
     });
 
@@ -869,7 +871,10 @@
   /* snap = {data, now, shift, preview} → Promise<[{blob, index:1, total:1, w, h, mode}]> دائماً صورة واحدة */
   async function render(snap, onProgress) {
     if (document.fonts && document.fonts.load) {
-      try { await Promise.all([document.fonts.load('700 40px "CL Sans"'), document.fonts.load('400 40px "CL Sans"')]); } catch (e) { /* تجاهل */ }
+      try {
+        await Promise.all([document.fonts.load('700 40px "CL Sans"', 'ابجد Abc'), document.fonts.load('400 40px "CL Sans"', 'ابجد Abc')]);
+        if (document.fonts.ready) await document.fonts.ready;      /* الخطوط جاهزة قبل بدء الرسم */
+      } catch (e) { /* تجاهل */ }
     }
     var lay = buildLayout(snap), W = PW, H = lay.H, blob, mode, outW = W, outH = H;
     CH = H;

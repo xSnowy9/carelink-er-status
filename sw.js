@@ -1,6 +1,6 @@
 /* Service Worker بسيط: يحفظ ملفات الموقع ليعمل بسرعة وبدون إنترنت بعد أول زيارة.
    يجلب النسخة الأحدث من الشبكة أولاً، فلا تبقى نسخة قديمة عند تحديث الموقع. */
-var CACHE = 'carelink-er-v3';
+var CACHE = 'carelink-er-v31';
 var FILES = ['./', 'index.html', 'css/style.css', 'js/config.js', 'js/png.js', 'js/report.js', 'js/app.js',
   'assets/fonts/clsans-regular.woff', 'assets/fonts/clsans-bold.woff', 'assets/icons/favicon.svg',
   'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'manifest.webmanifest'];
