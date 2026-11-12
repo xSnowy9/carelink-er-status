@@ -143,7 +143,7 @@ textarea { resize: vertical; line-height: 1.6; overflow: hidden; min-height: 84p
 .banner { background: #FFF6DD; border: 2px solid #F2D98D; color: #6B4A00; border-radius: 14px; padding: 10px 12px; font-weight: 700; margin-bottom: 12px; }
 .viewer { display: flex; align-items: center; gap: 8px; }
 .viewer .imgbox { flex: 1; min-width: 0; background: #061D48; border-radius: 18px; padding: 6px; box-shadow: 0 10px 34px rgba(6,29,72,.35); }
-#rimg { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 14px; background: #0A2A5E; -webkit-touch-callout: default; }
+#rimg { display: block; width: 100%; height: auto; min-height: 120px; border-radius: 14px; background: #0A2A5E; -webkit-touch-callout: default; }
 .navbtn { width: 46px; height: 64px; border-radius: 14px; border: 2px solid var(--line); background: #fff; color: var(--navy); display: grid; place-items: center; flex: none; }
 .navbtn:disabled { opacity: .35; }
 .navbtn.next svg { transform: scaleX(-1); }
@@ -191,3 +191,15 @@ textarea { resize: vertical; line-height: 1.6; overflow: hidden; min-height: 84p
 }
 
 @media (max-width: 460px) { .tile { padding: 8px 10px; gap: 8px; } .tile .t-ico { display: none; } .tile b { font-size: 16px; } }
+
+/* ===== مفاتيح التفاصيل وجدول المسؤولين ===== */
+.detail-sw { background: #F2F7FF; border: 2px solid #D2E2FA; border-radius: 14px; padding: 12px; min-height: 56px; }
+.detail-sw b { font-weight: 800; } .detail-sw i { font-style: normal; font-size: 12px; color: var(--mute); display: block; direction: ltr; text-align: right; }
+.detail { display: grid; gap: 12px; }
+.prow.mgr { grid-template-columns: 30px 1fr 46px; grid-template-areas: "n mt del" "n mn del"; }
+.prow.mgr .mt { grid-area: mt; } .prow.mgr .mn { grid-area: mn; }
+.mgrhead { display: none; }
+@media (min-width: 720px) {
+  .prow.mgr { grid-template-columns: 34px 1fr 1fr 44px; grid-template-areas: "n mt mn del"; }
+  .mgrhead { display: grid; grid-template-columns: 34px 1fr 1fr 44px; }
+}

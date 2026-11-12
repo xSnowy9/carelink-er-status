@@ -15,13 +15,14 @@
       arrDay: '', arrShift: '',
       acute: { beds: '', wait: '' }, trauma: { beds: '', wait: '' }, fast: { beds: '', wait: '' },
       ras: null, iso: '',
-      resus: { count: '', countManual: false, rows: [newRow()] },
-      clouded: { count: '', countManual: false, rows: [newRow()] },
-      rta: { count: '', action: '' }, crescent: { count: '', action: '' }, transferCount: '', transfer: '',
-      tech: '', paramedic: null, team: '', reception: '', mgmt: '', remarks: ''
+      resus: { count: '', countManual: false, details: false, rows: [newRow()] },
+      clouded: { count: '', countManual: false, details: false, rows: [newRow()] },
+      rta: { count: '', details: false, action: '' }, crescent: { count: '', details: false, action: '' }, transferCount: '', transfer: '',
+      tech: '', paramedic: null, team: '', reception: '', managers: [], remarks: ''
     };
   }
   function newRow() { return { name: '', mrn: '', bed: '' }; }
+  function newMgr() { return { title: '', name: '' }; }
   var state = blank();
 
   function getPath(o, path) { return path.split('.').reduce(function (a, k) { return a == null ? a : a[k]; }, o); }
@@ -45,6 +46,9 @@
       '<button type="button" class="mini" data-act="grow" aria-label="تكبير الخانة">' + CL.icon('expand', 16) + ' تكبير</button>' +
       '<button type="button" class="mini" data-act="shrink" aria-label="تصغير الخانة">' + CL.icon('shrink', 16) + ' تصغير</button></div></div>';
   }
+  function detailSwitch(tbl, ar, en) {
+    return '<label class="switch detail-sw"><input type="checkbox" data-path="' + tbl + '.details" data-kind="bool"><span class="sw"></span><span><b>' + ar + '</b> <i>' + en + '</i></span></label>';
+  }
   function seg(path, opts) {
     return '<div class="seg" role="group" data-seg="' + path + '">' + opts.map(function (o) {
       return '<button type="button" data-act="seg" data-path="' + path + '" data-v="' + o.v + '" class="' + o.cls + '" aria-pressed="false">' +
@@ -59,9 +63,11 @@
   function patientTable(tbl, color, icon, ar, en) {
     var inner = '<div class="countrow">' + numField(tbl + '.count', 'عدد المستفيدين بالأسرة', 'Beds Count', true) +
       '<p class="hint" data-hint="' + tbl + '"></p></div>' +
+      detailSwitch(tbl, 'إضافة قائمة المستفيدين (الاسم · الملف · السرير)', 'Add patient details') +
+      '<div class="detail" data-detail="' + tbl + '" hidden>' +
       '<div class="ptable" data-tbl="' + tbl + '"><div class="phead"><span>#</span><span>اسم المستفيد<i>Patient Name</i></span><span>رقم الملف<i>MRN</i></span><span>رقم السرير<i>Bed No.</i></span><span></span></div>' +
       '<div class="rows" data-rows="' + tbl + '"></div></div>' +
-      '<button type="button" class="addrow" data-act="addrow" data-tbl="' + tbl + '">' + CL.icon('plus', 22, 2.6) + '<span>إضافة صف <i>Add row</i></span></button>';
+      '<button type="button" class="addrow" data-act="addrow" data-tbl="' + tbl + '">' + CL.icon('plus', 22, 2.6) + '<span>إضافة صف <i>Add row</i></span></button></div>';
     return section(tbl, color, icon, ar, en, inner, 'tbl');
   }
 
@@ -104,8 +110,8 @@
     h += patientTable('clouded', K.clouded, 'cloud', 'التنويم السحابي', 'Clouded Bed');
 
     /* 5) الحالات والحوادث */
-    h += section('rta', K.rta, 'car', 'حالات حوادث السير', 'RTA', numField('rta.count', 'عدد المستفيدين', 'Cases Count') + textArea('rta.action', 'الإجراء', 'Action / Procedure', 3));
-    h += section('crescent', K.crescent, 'ambulance', 'حالات الهلال الأحمر', 'Red Crescent', numField('crescent.count', 'عدد المستفيدين', 'Cases Count') + textArea('crescent.action', 'الإجراء', 'Action / Procedure', 3));
+    h += section('rta', K.rta, 'car', 'حالات حوادث السير', 'RTA', numField('rta.count', 'عدد المستفيدين', 'Cases Count') + detailSwitch('rta', 'إضافة الإجراء والتفاصيل', 'Add Action / Procedure') + '<div class="detail" data-detail="rta" hidden>' + textArea('rta.action', 'الإجراء', 'Action / Procedure', 3) + '</div>');
+    h += section('crescent', K.crescent, 'ambulance', 'حالات الهلال الأحمر', 'Red Crescent', numField('crescent.count', 'عدد المستفيدين', 'Cases Count') + detailSwitch('crescent', 'إضافة الإجراء والتفاصيل', 'Add Action / Procedure') + '<div class="detail" data-detail="crescent" hidden>' + textArea('crescent.action', 'الإجراء', 'Action / Procedure', 3) + '</div>');
     h += section('transfer', K.transfer, 'transfer', 'الحالات المحولة لمستشفى آخر', 'Transferred-out Cases', numField('transferCount', 'عدد الحالات المحولة', 'Total Transferred Cases') + textArea('transfer', 'التفاصيل والإجراءات المتخذة', 'Details / Action', 3));
 
     /* 6) الأعطال */
@@ -118,7 +124,7 @@
     h += section('team', K.team, 'users', 'فريق كيرلينك', 'CareLink Team', numField('team', 'العدد', 'Count'));
     h += section('reception', K.recep, 'bell', 'الاستقبال', 'Receptionist', numField('reception', 'العدد', 'Count'));
     h += '</div>';
-    h += section('mgmt', K.mgmt, 'briefcase', 'الإدارة', 'Management', textArea('mgmt', 'التفاصيل الإدارية', 'Management details', 3));
+    h += section('mgmt', K.mgmt, 'briefcase', 'الإدارة', 'Management', '<div class="ptable mgrtable"><div class="phead mgrhead"><span>#</span><span>المسمى الوظيفي<i>Position / Title</i></span><span>الاسم<i>Name</i></span><span></span></div><div class="rows" data-mgrs></div></div><p class="hint" data-mgrhint></p>' + '<button type="button" class="addrow" data-act="addmgr">' + CL.icon('plus', 22, 2.6) + '<span>إضافة مسؤول <i>Add Manager</i></span></button>');
 
     /* 8) الملاحظات */
     h += section('remarks', K.remarks, 'notes', 'الملاحظات العامة', 'Remarks', textArea('remarks', 'ملاحظات إضافية عن الحالة التشغيلية', 'Additional operational remarks', 4));
@@ -138,6 +144,23 @@
     }).join('');
     updateAutoCount(tbl);
   }
+  function renderMgrs() {
+    var box = $('[data-mgrs]'); if (!box) return;
+    box.innerHTML = state.managers.map(function (r, i) {
+      return '<div class="prow mgr" data-i="' + i + '"><span class="n">' + (i + 1) + '</span>' +
+        '<input class="mt" type="text" data-nav data-mgr="1" data-i="' + i + '" data-f="title" dir="auto" autocomplete="off" enterkeyhint="next" placeholder="المسمى الوظيفي / Position" value="' + esc(r.title) + '">' +
+        '<input class="mn" type="text" data-nav data-mgr="1" data-i="' + i + '" data-f="name" dir="auto" autocomplete="off" enterkeyhint="next" placeholder="الاسم / Name" value="' + esc(r.name) + '">' +
+        '<button type="button" class="del" data-act="delmgr" data-i="' + i + '" aria-label="حذف المسؤول">' + CL.icon('trash', 20) + '</button></div>';
+    }).join('');
+    var hint = $('[data-mgrhint]');
+    if (hint) hint.textContent = state.managers.length ? '' : 'لا يوجد مسؤولون مضافون. اضغط «إضافة مسؤول» عند الحاجة (اختياري).';
+  }
+  function applyDetails() {
+    ['resus', 'clouded', 'rta', 'crescent'].forEach(function (t) {
+      var c = $('[data-detail="' + t + '"]'); if (c) c.hidden = !state[t].details;
+      var k = $('[data-path="' + t + '.details"]'); if (k) k.checked = !!state[t].details;
+    });
+  }
   function filledRows(tbl) {
     return state[tbl].rows.filter(function (r) { return (r.name + r.mrn + r.bed).trim() !== ''; }).length;
   }
@@ -145,10 +168,12 @@
     var t = state[tbl];
     var hint = $('[data-hint="' + tbl + '"]');
     var inp = $('[data-path="' + tbl + '.count"]');
-    if (!t.countManual) {
+    if (!t.countManual && t.details) {
       t.count = filledRows(tbl) ? String(filledRows(tbl)) : '';
       if (inp) inp.value = t.count;
       if (hint) hint.textContent = 'العدد يُحسب تلقائياً من الصفوف المعبأة. اكتب رقماً لتغييره يدوياً.';
+    } else if (!t.countManual) {
+      if (hint) hint.textContent = '';
     } else if (hint) {
       hint.innerHTML = 'العدد يدوي. <button type="button" class="linkbtn" data-act="autocount" data-tbl="' + tbl + '">العودة للحساب التلقائي</button>';
     }
@@ -168,8 +193,8 @@
     $$('[data-path]').forEach(function (el) {
       if (el.matches('button')) return;
       var v = getPath(state, el.dataset.path);
+      if (el.type === 'checkbox') { el.checked = !!v; return; }
       el.value = v == null ? '' : v;
-      if (el.tagName === 'TEXTAREA') { autosize(el); updateCount(el); }
     });
     $$('[data-seg]').forEach(function (g) {
       var v = getPath(state, g.dataset.seg);
@@ -179,7 +204,9 @@
     $('#chkCount').checked = !!state.showCount;
     document.body.classList.toggle('show-count', !!state.showCount);
     $$('[data-cnt]').forEach(function (c) { c.hidden = !state.showCount; });
-    renderRows('resus'); renderRows('clouded');
+    applyDetails();
+    $$('textarea').forEach(function (ta) { if (ta.offsetParent !== null) autosize(ta); updateCount(ta); });
+    renderRows('resus'); renderRows('clouded'); renderMgrs();
     tickClock(true);
   }
 
@@ -307,7 +334,7 @@
     session = {
       preview: !!preview, snap: snap, saved: false, cur: 0,
       images: imgs.map(function (im) {
-        return { blob: im.blob, url: URL.createObjectURL(im.blob), index: im.index, total: im.total, name: im.total > 1 ? base + '_' + im.index + 'of' + im.total + '.png' : base + '.png' };
+        return { blob: im.blob, url: URL.createObjectURL(im.blob), index: im.index, total: im.total, w: im.w, h: im.h, mode: im.mode, name: base + '.png' };
       })
     };
     if (!preview) finalDirty = false;
@@ -318,7 +345,7 @@
 
   function showBusy(on, i, n) {
     var b = $('#busy'); b.hidden = !on;
-    if (on) $('#busyMsg').textContent = n ? 'جارٍ رسم الصورة ' + i + ' من ' + n + '…' : 'جارٍ إنشاء التقرير…';
+    if (on) $('#busyMsg').textContent = n > 1 ? 'جارٍ رسم التقرير… ' + Math.round(i * 100 / n) + '%' : 'جارٍ إنشاء التقرير…';
   }
 
   /* ================= شاشة التقرير ================= */
@@ -333,7 +360,9 @@
   }
   function renderReport() {
     var s = session, im = s.images[s.cur], n = s.images.length;
-    var el = $('#rimg'); el.src = im.url; el.alt = 'ER STATS REPORT ' + im.index + '/' + n;
+    var el = $('#rimg'); $('#imgFail').hidden = true;
+    el.onerror = function () { $('#imgFail').hidden = false; }; el.onload = function () { $('#imgFail').hidden = true; };
+    el.src = im.url; el.alt = 'ER STATS REPORT';
     $('#pageLabel').textContent = n > 1 ? 'صورة ' + im.index + ' من ' + n + '  ·  ' + im.index + '/' + n : 'صورة واحدة';
     $('#prevBtn').hidden = n < 2; $('#nextBtn').hidden = n < 2;
     $('#prevBtn').disabled = s.cur === 0; $('#nextBtn').disabled = s.cur === n - 1;
@@ -343,9 +372,8 @@
     $('#previewBanner').hidden = !s.preview;
     $('#finalActions').hidden = s.preview; $('#previewActions').hidden = !s.preview;
     $('#dlOne').querySelector('.t').textContent = n > 1 ? 'تنزيل هذه الصورة (PNG)' : 'تنزيل الصورة (PNG)';
-    $('#dlZip').hidden = n < 2;
     var t = s.snap.now;
-    $('#rmeta').textContent = t.dayEn + ' ' + t.dateEn + ' · ' + t.timeEn + ' · ' + n + (n > 1 ? ' صور' : ' صورة') + ' · 3000×3000';
+    $('#rmeta').textContent = t.dayEn + ' ' + t.dateEn + ' · ' + t.timeEn + ' · صورة واحدة · ' + im.w + '×' + im.h + ' px';
   }
 
   function triggerDownload(blob, name) {
@@ -359,13 +387,6 @@
     triggerDownload(im.blob, im.name);
     session.saved = true;
     toast('تم تنزيل ' + im.name);
-  }
-  async function downloadZip() {
-    var files = session.images.map(function (im) { return { name: im.name, blob: im.blob }; });
-    var zip = await CL.makeZip(files);
-    triggerDownload(zip, 'ER-REPORT_' + session.snap.now.fileStamp + '.zip');
-    session.saved = true;
-    toast('تم تنزيل ملف ZIP');
   }
   async function shareReport() {
     var s = session;
@@ -381,7 +402,7 @@
       }
     }
     /* المتصفح لا يدعم مشاركة الصور مباشرة: ننزّل الصور ثم نفتح واتساب */
-    if (files.length > 1) await downloadZip(); else downloadCurrent();
+    downloadCurrent();
     var go = await ask('أرفق الصورة في واتساب',
       '<p>هذا المتصفح لا يدعم إرسال الصور مباشرة إلى واتساب، لذلك تم <b>تنزيل الصور على جهازك</b>.</p><p>افتح واتساب وأرسل الصورة إلى مدير المستشفى من زر الإرفاق (📎) ← المعرض / الملفات.</p>',
       [{ label: 'فتح واتساب', cls: 'wa', value: true }, { label: 'إغلاق', value: false }]);
@@ -398,7 +419,7 @@
     toast('تم مسح البيانات. يمكنك بدء تقرير جديد.');
   }
   async function actionDownload() {
-    if (session && !session.preview && !finalDirty) { openReportScreen(); (session.images.length > 1 ? downloadZip : downloadCurrent)(); return; }
+    if (session && !session.preview && !finalDirty) { openReportScreen(); downloadCurrent(); return; }
     var ok = await generate(false);
     if (ok) toast('تم إنشاء التقرير. اضغط زر التنزيل.');
   }
@@ -418,6 +439,8 @@
   /* ================= الأحداث ================= */
   function onInput(e) {
     var el = e.target;
+    if (el.dataset.kind === 'bool') return;
+    if (el.dataset.mgr) { state.managers[+el.dataset.i][el.dataset.f] = el.value; finalDirty = true; scheduleSave(); return; }
     if (el.dataset.f && el.dataset.tbl) {                       // صف مريض
       var v = el.value;
       if (el.dataset.f === 'mrn' || el.dataset.f === 'bed') { var nv = CL.normDigits(v); if (nv !== v) { el.value = nv; v = nv; } }
@@ -436,6 +459,17 @@
     }
     setPath(state, path, val);
     if (el.tagName === 'TEXTAREA') { autosize(el); updateCount(el); }
+    finalDirty = true; scheduleSave();
+  }
+
+  function onChange(e) {
+    var el = e.target;
+    if (el.dataset.kind !== 'bool') return;
+    var t = el.dataset.path.split('.')[0];
+    setPath(state, el.dataset.path, el.checked);
+    applyDetails();
+    $$('[data-detail="' + t + '"] textarea').forEach(function (ta) { autosize(ta); updateCount(ta); });
+    if (t === 'resus' || t === 'clouded') updateAutoCount(t);
     finalDirty = true; scheduleSave();
   }
 
@@ -464,6 +498,16 @@
         state[tb].rows.splice(i, 1); if (!state[tb].rows.length) state[tb].rows.push(newRow());
         renderRows(tb); finalDirty = true;
       });
+    } else if (act === 'addmgr') {
+      state.managers.push(newMgr()); renderMgrs();
+      var ms = $$('[data-mgrs] .prow'); var lm = ms[ms.length - 1];
+      if (lm) { lm.querySelector('input').focus(); lm.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+      finalDirty = true; scheduleSave();
+    } else if (act === 'delmgr') {
+      var mi = +b.dataset.i, mr = state.managers[mi];
+      (((mr.title + mr.name).trim()) ? ask('حذف المسؤول؟', '<p>سيتم حذف هذا الصف.</p>', [{ label: 'حذف', cls: 'danger', value: true }, { label: 'إلغاء', value: false }]) : Promise.resolve(true)).then(function (ok) {
+        if (!ok) return; state.managers.splice(mi, 1); renderMgrs(); finalDirty = true; scheduleSave();
+      });
     } else if (act === 'autocount') {
       state[b.dataset.tbl].countManual = false; updateAutoCount(b.dataset.tbl); scheduleSave();
     } else if (act === 'grow' || act === 'shrink') {
@@ -481,6 +525,14 @@
     var el = e.target;
     if (e.key !== 'Enter' || !el.matches('input[data-nav]') || e.isComposing) return;
     e.preventDefault();
+    if (el.dataset.mgr) {
+      var ml = state.managers, last = ml[ml.length - 1];
+      if (el.dataset.f === 'name' && +el.dataset.i === ml.length - 1 && (last.title + last.name).trim() !== '') {
+        ml.push(newMgr()); renderMgrs();
+        var mp = $$('[data-mgrs] .prow'); mp[mp.length - 1].querySelector('input').focus(); return;
+      }
+      focusNext(el); return;
+    }
     if (el.dataset.f === 'bed') {
       var tbl = el.dataset.tbl, rows = state[tbl].rows;
       if (+el.dataset.i === rows.length - 1 && (rows[rows.length - 1].name + rows[rows.length - 1].mrn + rows[rows.length - 1].bed).trim() !== '') {
@@ -494,6 +546,7 @@
   function bindOnce() {
     var root = $('#screenEntry');
     root.addEventListener('input', onInput);
+    root.addEventListener('change', onChange);
     root.addEventListener('click', onClick);
     root.addEventListener('keydown', onKeydown);
     $('#screenReport').addEventListener('click', onClick);
@@ -518,7 +571,6 @@
     $('#prevBtn').onclick = function () { if (session.cur > 0) { session.cur--; renderReport(); } };
     $('#nextBtn').onclick = function () { if (session.cur < session.images.length - 1) { session.cur++; renderReport(); } };
     $('#dlOne').onclick = downloadCurrent;
-    $('#dlZip').onclick = downloadZip;
     $('#rShare').onclick = shareReport;
     $('#pvFinal').onclick = function () { generate(false); };
     $('#pvBack').onclick = backToEntry;
@@ -553,6 +605,11 @@
         var base = blank(), saved = d.d;
         Object.keys(base).forEach(function (k) { if (saved[k] !== undefined) base[k] = saved[k]; });
         base.resus.rows = [newRow()]; base.clouded.rows = [newRow()];
+        if (saved.rta && saved.rta.details === undefined && (saved.rta.action || '').trim()) base.rta.details = true;
+        if (saved.crescent && saved.crescent.details === undefined && (saved.crescent.action || '').trim()) base.crescent.details = true;
+        if (!Array.isArray(base.managers)) base.managers = [];
+        if (!base.managers.length && (saved.mgmt || '').trim()) base.managers = [{ title: '', name: String(saved.mgmt).trim() }];
+        delete base.mgmt;
         state = base; syncAll(); toast('تمت استعادة المسودة');
       } else { clearDraft(); }
     }

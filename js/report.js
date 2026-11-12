@@ -18,7 +18,10 @@
   var HDR1 = 505;                // بداية المحتوى في الصفحة الأولى
   var HDRN = 345;                // بداية المحتوى في الصفحات التالية
   var FOOT = 100;
-  var BOT = PH - FOOT - 16;      // آخر نقطة مسموحة للمحتوى
+  var CH = PH;                   // ارتفاع الصورة الحالي (ديناميكي)
+  var RY0 = -1e9, RY1 = 1e9;     // نطاق الرسم الحالي (للرسم على شرائح)
+  var SAFE_AREA = 16000000;      // مساحة آمنة لـ Canvas واحد على كل الأجهزة
+  var STRIP = 500;               // ارتفاع الشريحة عند الرسم المقسّم
 
   var INK = K.ink, MUTE = K.mute;
   var BODY = 46, LH = 58;        // خط النصوص وارتفاع السطر
@@ -260,6 +263,55 @@
     };
   }
 
+  /* ---------- جدول المسؤولين (Management) ---------- */
+  function mgrCols(w) {
+    var num = 80, title = Math.floor((w - num) * 0.46), name = w - num - title;
+    var cx = w, o = {};
+    [['num', num], ['title', title], ['name', name]].forEach(function (c) { cx -= c[1]; o[c[0]] = { x: cx, w: c[1] }; });
+    return o;
+  }
+  function mgrHead(iw) {
+    return {
+      h: 84,
+      draw: function (ctx, x, y, w, c) {
+        var cols = mgrCols(w);
+        ctx.fillStyle = tint(c, 0.86); rr(ctx, x, y, w, 84, 18); ctx.fill();
+        function cell(col, ar, en) {
+          T(ctx, ar, x + col.x + col.w / 2, y + 36, { size: 30, weight: '700', color: INK, maxW: col.w - 12, min: 20, dir: 'rtl' });
+          if (en) T(ctx, en, x + col.x + col.w / 2, y + 68, { size: 24, weight: '500', color: MUTE, maxW: col.w - 12, min: 16, dir: 'ltr' });
+        }
+        cell(cols.num, '#', '');
+        cell(cols.title, 'المسمى الوظيفي', 'Position / Title');
+        cell(cols.name, 'الاسم', 'Name');
+      }
+    };
+  }
+  function mgrRow(row, w) {
+    var cols = mgrCols(w);
+    var f = fnt('500', 42);
+    var tl = wrap(row.title || '', f, cols.title.w - 28), nl = wrap(row.name || '', f, cols.name.w - 28);
+    var n = Math.max(1, tl.length, nl.length);
+    var h = Math.max(78, n * 54 + 26);
+    return {
+      h: h,
+      draw: function (ctx, x, y, ww, c) {
+        var cs = mgrCols(ww);
+        if (row.idx % 2 === 0) { ctx.fillStyle = tint(c, 0.95); rr(ctx, x, y, ww, h, 14); ctx.fill(); }
+        ctx.strokeStyle = tint(c, 0.82); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x + 10, y + h); ctx.lineTo(x + ww - 10, y + h); ctx.stroke();
+        T(ctx, row.idx, x + cs.num.x + cs.num.w / 2, y + 52, { size: 36, weight: '700', color: c, dir: 'ltr' });
+        function col(lines, cc, bold) {
+          lines.forEach(function (l, i) {
+            if (!l.t) return;
+            var d = dirOf(l.t);
+            T(ctx, l.t, d === 'rtl' ? x + cc.x + cc.w - 14 : x + cc.x + 14, y + 52 + i * 54, { size: 42, weight: bold ? '700' : '500', color: INK, align: d === 'rtl' ? 'right' : 'left', dir: d });
+          });
+        }
+        col(tl, cs.title, true); col(nl, cs.name, false);
+      }
+    };
+  }
+
   /* ========================================================
      بناء اللوحات (Panels) من الوحدات
      ======================================================== */
@@ -279,6 +331,13 @@
         rest = function (k) {
           return k >= lines.length ? null : Object.assign({}, p, { cont: true, chip: null, paras: restParas(lines, k) });
         };
+      }
+    } else if (p.type === 'mgr') {
+      if (!p.rows.length) {
+        body = [emptyUnit('لا توجد أسماء مسجلة')];
+      } else {
+        head = [mgrHead(iw)];
+        body = p.rows.map(function (r) { return mgrRow(r, iw); });
       }
     } else if (p.type === 'table') {
       if (!p.rows.length) {
@@ -341,7 +400,9 @@
       items.push({
         p: o.p, w: o.w, x: xr,
         units: o.pre.concat(o.head, o.body.slice(0, ks[i])),
-        hasBody: o.body.length > 0
+        hasBody: o.body.length > 0,
+        nat: o.fixed + sum(o.body.slice(0, ks[i])),
+        compact: !!o.p.noStretch
       });
       xr -= GAP;
     });
@@ -353,6 +414,7 @@
      ======================================================== */
   function drawPanel(ctx, it, y, H, hdr) {
     var p = it.p, x = it.x, w = it.w, c = p.color;
+    if (y > RY1 + 60 || y + H < RY0 - 60) return;
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.38)'; ctx.shadowBlur = 34; ctx.shadowOffsetY = 10;
     ctx.fillStyle = '#FFFFFF'; rr(ctx, x, y, w, H, R); ctx.fill();
@@ -394,7 +456,7 @@
     var yy = y + hdr + PADT;
     if (!it.hasBody) yy = y + hdr + Math.max(PADT, (H - hdr - total) / 2);
     it.units.forEach(function (u) {
-      u.draw(ctx, x + PADX, yy, w - 2 * PADX, c);
+      if (yy + u.h >= RY0 - 20 && yy <= RY1 + 20) u.draw(ctx, x + PADX, yy, w - 2 * PADX, c);
       yy += u.h;
     });
   }
@@ -422,18 +484,23 @@
      خلفية وترويسة وتذييل
      ======================================================== */
   function drawBg(ctx) {
-    var g = ctx.createLinearGradient(0, 0, 0, PH);
+    var g = ctx.createLinearGradient(0, 0, 0, CH);
     g.addColorStop(0, '#0C3C86'); g.addColorStop(0.5, '#082A66'); g.addColorStop(1, '#051640');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, PW, PH);
-    var r1 = ctx.createRadialGradient(PW * 0.85, 250, 50, PW * 0.85, 250, 1000);
-    r1.addColorStop(0, 'rgba(60,150,255,.30)'); r1.addColorStop(1, 'rgba(60,150,255,0)');
-    ctx.fillStyle = r1; ctx.fillRect(0, 0, PW, PH);
-    var r2 = ctx.createRadialGradient(PW * 0.1, PH * 0.75, 50, PW * 0.1, PH * 0.75, 1100);
-    r2.addColorStop(0, 'rgba(0,200,220,.16)'); r2.addColorStop(1, 'rgba(0,200,220,0)');
-    ctx.fillStyle = r2; ctx.fillRect(0, 0, PW, PH);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, PW, CH);
+    for (var gy0 = 250; gy0 < CH + 1000; gy0 += 2600) {
+      if (gy0 + 1000 < RY0 || gy0 - 1000 > RY1) continue;
+      var r1 = ctx.createRadialGradient(PW * 0.85, gy0, 50, PW * 0.85, gy0, 1000);
+      r1.addColorStop(0, 'rgba(60,150,255,.30)'); r1.addColorStop(1, 'rgba(60,150,255,0)');
+      ctx.fillStyle = r1; ctx.fillRect(0, gy0 - 1000, PW, 2000);
+      var gy1 = gy0 + 1300;
+      var r2 = ctx.createRadialGradient(PW * 0.1, gy1, 50, PW * 0.1, gy1, 1100);
+      r2.addColorStop(0, 'rgba(0,200,220,.16)'); r2.addColorStop(1, 'rgba(0,200,220,0)');
+      ctx.fillStyle = r2; ctx.fillRect(0, gy1 - 1100, PW, 2200);
+    }
     /* صلبان طبية خافتة */
     ctx.fillStyle = 'rgba(255,255,255,.035)';
-    for (var gy = 60; gy < PH; gy += 170) {
+    for (var gy = 60; gy < CH; gy += 170) {
+      if (gy < RY0 - 40 || gy > RY1 + 40) continue;
       for (var gx = (gy / 170 % 2 ? 60 : 145); gx < PW; gx += 170) {
         ctx.fillRect(gx - 4, gy - 16, 8, 32); ctx.fillRect(gx - 16, gy - 4, 32, 8);
       }
@@ -614,7 +681,8 @@
   }
 
   function drawFooter(ctx, snap, pi, total) {
-    var y = PH - FOOT;
+    var y = CH - FOOT;
+    if (RY1 < y - 40) return;
     ctx.fillStyle = 'rgba(4,16,48,.78)'; ctx.fillRect(0, y, PW, FOOT);
     ecgLine(ctx, 0, PW, y, 22, 'rgba(255,70,90,.7)', 5, 12);
     var cy = y + 66;
@@ -627,12 +695,15 @@
   }
 
   function drawWatermark(ctx) {
-    ctx.save();
-    ctx.translate(PW / 2, PH / 2); ctx.rotate(-Math.PI / 6);
-    ctx.globalAlpha = 0.16;
-    T(ctx, 'PREVIEW', 0, 0, { size: 520, weight: '800', color: '#FFFFFF', dir: 'ltr' });
-    T(ctx, 'معاينة – غير نهائي', 0, 290, { size: 230, weight: '800', color: '#FFFFFF', dir: 'rtl' });
-    ctx.restore();
+    for (var cy = 1500; cy - 1500 < CH; cy += 3000) {
+      if (cy + 1100 < RY0 || cy - 1100 > RY1) continue;
+      ctx.save();
+      ctx.translate(PW / 2, cy); ctx.rotate(-Math.PI / 6);
+      ctx.globalAlpha = 0.16;
+      T(ctx, 'PREVIEW', 0, 0, { size: 520, weight: '800', color: '#FFFFFF', dir: 'ltr' });
+      T(ctx, 'معاينة – غير نهائي', 0, 290, { size: 230, weight: '800', color: '#FFFFFF', dir: 'rtl' });
+      ctx.restore();
+    }
   }
 
   /* ========================================================
@@ -645,6 +716,15 @@
       if ((r.name || '').trim() || (r.mrn || '').trim() || (r.bed || '').trim()) {
         out.push({ name: (r.name || '').trim(), mrn: (r.mrn || '').trim(), bed: (r.bed || '').trim(), idx: out.length + 1 });
       }
+    });
+    return out;
+  }
+
+  function cleanMgrs(rows) {
+    var out = [];
+    (rows || []).forEach(function (m) {
+      var t = (m.title || '').trim(), n = (m.name || '').trim();
+      if (t || n) out.push({ title: t, name: n, idx: out.length + 1 });
     });
     return out;
   }
@@ -677,19 +757,35 @@
       ]
     });
 
+    /* لوحة عدد فقط (عند إيقاف التفاصيل): رقم كبير بدون مساحة فارغة */
+    function countOnly(color, icon, title, label, val) {
+      return staticP({ noStretch: true, color: color, icon: icon, title: title, pre: function () { return [statUnit([{ ar: label[0], en: label[1], val: nv(val) }], 170, true)]; } });
+    }
+    var resusOn = !!d.resus.details, cloudOn = !!d.clouded.details, rtaOn = !!d.rta.details, rcOn = !!d.crescent.details;
+    var bedsLbl = ['عدد المستفيدين بالأسرة', 'Beds Count'], caseLbl = ['عدد المستفيدين', 'Cases Count'];
+    var actHead = function () { return [labelUnit('الإجراء', 'Action / Procedure')]; };
+
     blocks.push({
       atomic: false,
       cols: [
-        { type: 'table', weight: 1, color: K.resus, icon: 'pulse', title: { ar: 'الإنعاش', en: 'Resus' }, chip: { ar: 'عدد المستفيدين بالأسرة', en: 'Beds Count', val: nv(d.resus.count) }, rows: cleanRows(d.resus.rows) },
-        { type: 'table', weight: 1, color: K.clouded, icon: 'cloud', title: { ar: 'التنويم السحابي', en: 'Clouded Bed' }, chip: { ar: 'عدد المستفيدين بالأسرة', en: 'Beds Count', val: nv(d.clouded.count) }, rows: cleanRows(d.clouded.rows) }
+        resusOn
+          ? { type: 'table', weight: 1, color: K.resus, icon: 'pulse', title: { ar: 'الإنعاش', en: 'Resus' }, chip: { ar: bedsLbl[0], en: bedsLbl[1], val: nv(d.resus.count) }, rows: cleanRows(d.resus.rows) }
+          : countOnly(K.resus, 'pulse', { ar: 'الإنعاش', en: 'Resus' }, bedsLbl, d.resus.count),
+        cloudOn
+          ? { type: 'table', weight: 1, color: K.clouded, icon: 'cloud', title: { ar: 'التنويم السحابي', en: 'Clouded Bed' }, chip: { ar: bedsLbl[0], en: bedsLbl[1], val: nv(d.clouded.count) }, rows: cleanRows(d.clouded.rows) }
+          : countOnly(K.clouded, 'cloud', { ar: 'التنويم السحابي', en: 'Clouded Bed' }, bedsLbl, d.clouded.count)
       ]
     });
 
     blocks.push({
       atomic: false,
       cols: [
-        { type: 'text', weight: 1, color: K.rta, icon: 'car', title: { ar: 'حوادث السير', en: 'RTA' }, chip: { ar: 'عدد المستفيدين', en: 'Cases Count', val: nv(d.rta.count) }, paras: [d.rta.action || ''], head: function () { return [labelUnit('الإجراء', 'Action / Procedure')]; } },
-        { type: 'text', weight: 1, color: K.crescent, icon: 'ambulance', title: { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, chip: { ar: 'عدد المستفيدين', en: 'Cases Count', val: nv(d.crescent.count) }, paras: [d.crescent.action || ''], head: function () { return [labelUnit('الإجراء', 'Action / Procedure')]; } },
+        rtaOn
+          ? { type: 'text', weight: 1, color: K.rta, icon: 'car', title: { ar: 'حوادث السير', en: 'RTA' }, chip: { ar: caseLbl[0], en: caseLbl[1], val: nv(d.rta.count) }, paras: [d.rta.action || ''], head: actHead }
+          : countOnly(K.rta, 'car', { ar: 'حوادث السير', en: 'RTA' }, caseLbl, d.rta.count),
+        rcOn
+          ? { type: 'text', weight: 1, color: K.crescent, icon: 'ambulance', title: { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, chip: { ar: caseLbl[0], en: caseLbl[1], val: nv(d.crescent.count) }, paras: [d.crescent.action || ''], head: actHead }
+          : countOnly(K.crescent, 'ambulance', { ar: 'حالات الهلال الأحمر', en: 'Red Crescent' }, caseLbl, d.crescent.count),
         { type: 'text', weight: 1.4, color: K.transfer, icon: 'transfer', title: { ar: 'الحالات المحولة لمستشفى آخر', en: 'Transferred-out Cases' }, chipW: 440, chip: { ar: 'عدد الحالات المحولة', en: 'Total Transferred Cases', val: nv(d.transferCount) }, paras: [d.transfer || ''], head: function () { return [labelUnit('التفاصيل / الإجراء', 'Details / Action')]; } }
       ]
     });
@@ -697,8 +793,8 @@
     blocks.push({
       atomic: false,
       cols: [
-        { type: 'text', weight: 2, color: K.tech, icon: 'monitor', title: { ar: 'الأعطال الفنية والتقنية', en: 'Technical & IT Issues' }, paras: [d.tech || ''] },
-        { type: 'text', weight: 1, color: K.mgmt, icon: 'briefcase', title: { ar: 'الإدارة', en: 'Management' }, paras: [d.mgmt || ''] }
+        { type: 'text', weight: 1.7, color: K.tech, icon: 'monitor', title: { ar: 'الأعطال الفنية والتقنية', en: 'Technical & IT Issues' }, paras: [d.tech || ''] },
+        { type: 'mgr', weight: 1.3, color: K.mgmt, icon: 'briefcase', title: { ar: 'الإدارة', en: 'Management' }, rows: cleanMgrs(d.managers) }
       ]
     });
 
@@ -715,76 +811,96 @@
   }
 
   /* ========================================================
-     توزيع الكتل على الصفحات
+     التخطيط: صورة واحدة طويلة (الارتفاع ديناميكي، لا تقسيم أبداً)
      ======================================================== */
-  function paginate(blocks) {
-    var pages = [], cur = { items: [], y: HDR1 }, q = blocks.slice();
-    function np() { pages.push(cur); cur = { items: [], y: HDRN }; }
-    var guard = 0;
-    while (q.length && guard++ < 500) {
-      var b = q[0];
-      var L = layoutBlock(b, BOT - cur.y, cur.items.length === 0);
-      if (!L) { np(); continue; }
-      cur.items.push({ L: L, y: cur.y, extra: 0 });
-      cur.y += L.h + GAP;
-      q.shift();
-      if (L.rest) { q.unshift(L.rest); np(); }
-    }
-    pages.push(cur);
-    return pages;
-  }
-
-  /* عندما يكون المحتوى قليلاً: نوزّع المساحة الفارغة ليبدو التقرير متوازناً */
-  function stretch(pages) {
-    if (pages.length !== 1) return;
-    var p = pages[0], nb = p.items.length;
-    p.gapExtra = 0;
-    var left = BOT - (p.y - GAP);
-    if (left <= 0 || !nb) return;
-    var g1 = Math.min(left * 0.35 / nb, 44); left -= g1 * nb;
-    var e = Math.min(left / nb, 130); left -= e * nb;
-    p.items.forEach(function (it) { it.extra = e; });
-    p.gapExtra = g1 + (left > 0 ? left / (nb + 1) : 0);
-  }
-
-  function renderPage(ctx, page, pi, total, snap) {
-    drawBg(ctx);
-    drawHeader(ctx, snap, pi, total);
-    var y = (pi === 0 ? HDR1 : HDRN) + (page.gapExtra || 0);
-    page.items.forEach(function (it) {
-      var H = it.L.h + it.extra;
-      it.L.items.forEach(function (pn) { drawPanel(ctx, pn, y, H, it.L.hdr); });
-      y += H + GAP + (page.gapExtra || 0);
+  function buildLayout(snap) {
+    var blocks = buildBlocks(snap), items = [], y = HDR1;
+    blocks.forEach(function (b) {
+      var L = layoutBlock(b, Infinity, true);
+      items.push({ L: L, extra: 0 });
+      y += L.h + GAP;
     });
-    drawFooter(ctx, snap, pi, total);
+    var end = y - GAP;
+    var H = Math.max(PH, Math.ceil(end + 16 + FOOT));
+    var gapExtra = 0;
+    if (H === PH) {                       /* محتوى قليل: نوزّع المساحة ليبقى التقرير متوازناً */
+      var left = PH - FOOT - 16 - end, nb = items.length;
+      if (left > 0 && nb) {
+        var g1 = Math.min(left * 0.35 / nb, 44); left -= g1 * nb;
+        var e = Math.min(left / nb, 130); left -= e * nb;
+        items.forEach(function (it) { it.extra = e; });
+        gapExtra = g1 + (left > 0 ? left / (nb + 1) : 0);
+      }
+    }
+    return { items: items, H: H, gapExtra: gapExtra };
+  }
+
+  function drawAll(ctx, lay, snap) {
+    drawBg(ctx);
+    if (RY0 < 600) drawHeader(ctx, snap, 0, 1);
+    var y = HDR1 + lay.gapExtra;
+    lay.items.forEach(function (it) {
+      var H = it.L.h + it.extra;
+      it.L.items.forEach(function (pn) {
+        drawPanel(ctx, pn, y, pn.p.hero ? H : pn.nat + it.extra, it.L.hdr);   // كل بطاقة بارتفاعها الطبيعي: لا تتأثر بجاراتها
+      });
+      y += H + GAP + lay.gapExtra;
+    });
+    drawFooter(ctx, snap, 0, 1);
     if (snap.preview) drawWatermark(ctx);
   }
 
-  function tick() { return new Promise(function (r) { setTimeout(r, 20); }); }
+  function canvasOK(w, h) {
+    try {
+      var c = document.createElement('canvas'); c.width = w; c.height = h;
+      var x = c.getContext('2d'); if (!x) return false;
+      x.fillStyle = '#123456'; x.fillRect(w - 2, h - 2, 2, 2);
+      var d = x.getImageData(w - 1, h - 1, 1, 1).data;
+      c.width = 1; c.height = 1;
+      return d[3] === 255;
+    } catch (e) { return false; }
+  }
+  function toBlob(cv) {
+    return new Promise(function (res, rej) {
+      try { cv.toBlob(function (b) { b ? res(b) : rej(new Error('toBlob failed')); }, 'image/png'); } catch (e) { rej(e); }
+    });
+  }
 
-  /* snap = {data, now, shift, preview} → Promise<[{blob, index, total}]> */
+  /* snap = {data, now, shift, preview} → Promise<[{blob, index:1, total:1, w, h, mode}]> دائماً صورة واحدة */
   async function render(snap, onProgress) {
     if (document.fonts && document.fonts.load) {
       try { await Promise.all([document.fonts.load('700 40px "CL Sans"'), document.fonts.load('400 40px "CL Sans"')]); } catch (e) { /* تجاهل */ }
     }
-    var pages = paginate(buildBlocks(snap));
-    stretch(pages);
-    var out = [];
-    for (var i = 0; i < pages.length; i++) {
-      var cv = document.createElement('canvas');
-      cv.width = PW; cv.height = PH;
-      var ctx = cv.getContext('2d');
-      renderPage(ctx, pages[i], i, pages.length, snap);
-      var blob = await new Promise(function (res, rej) {
-        try { cv.toBlob(function (b) { b ? res(b) : rej(new Error('toBlob failed')); }, 'image/png'); } catch (e) { rej(e); }
-      });
-      out.push({ blob: blob, index: i + 1, total: pages.length });
-      cv.width = 1; cv.height = 1;
-      if (onProgress) onProgress(i + 1, pages.length);
-      await tick();
-    }
-    return out;
+    var lay = buildLayout(snap), W = PW, H = lay.H, blob, mode, outW = W, outH = H;
+    CH = H;
+    try {
+      if (!CL.Report._forceStrips && W * H <= SAFE_AREA && canvasOK(W, H)) {
+        mode = 'canvas';
+        RY0 = -1e9; RY1 = 1e9;
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        drawAll(cv.getContext('2d'), lay, snap);
+        blob = await toBlob(cv); cv.width = 1; cv.height = 1;
+        if (onProgress) onProgress(1, 1);
+      } else if (CL.canStreamPng && CL.canStreamPng()) {
+        mode = 'strips';
+        blob = await CL.encodePngStrips(W, H, STRIP, function (ctx, y0, y1) {
+          RY0 = y0; RY1 = y1; ctx.translate(0, -y0); drawAll(ctx, lay, snap);
+        }, onProgress);
+      } else {
+        /* متصفح قديم: نبقي الصورة واحدة ونقلّل دقتها فقط بالقدر اللازم */
+        mode = 'scaled';
+        var s = Math.min(1, Math.sqrt(SAFE_AREA / (W * H)));
+        outW = Math.round(W * s); outH = Math.round(H * s);
+        RY0 = -1e9; RY1 = 1e9;
+        var cv2 = document.createElement('canvas'); cv2.width = outW; cv2.height = outH;
+        var c2 = cv2.getContext('2d'); c2.scale(s, s);
+        drawAll(c2, lay, snap);
+        blob = await toBlob(cv2); cv2.width = 1; cv2.height = 1;
+        if (onProgress) onProgress(1, 1);
+      }
+    } finally { RY0 = -1e9; RY1 = 1e9; }
+    return [{ blob: blob, index: 1, total: 1, w: outW, h: outH, mode: mode }];
   }
 
-  CL.Report = { render: render, SIZE: PW, _paginate: function (snap) { var p = paginate(buildBlocks(snap)); return p.length; } };
+  CL.Report = { render: render, SIZE: PW, _forceStrips: false, _layoutHeight: function (snap) { return buildLayout(snap).H; } };
 })();
